@@ -80,6 +80,10 @@ main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: m
 .titlepage .eyebrow { font-size: 17px; color: var(--ink-3); }
 .titlepage h1 { font-family: var(--display); font-weight: 400; font-size: clamp(42px, 8vw, 80px); line-height: 1.06; letter-spacing: -0.02em; margin: 22px 0 26px; text-wrap: balance; }
 .titlepage .by { font-style: italic; font-size: 18px; margin: 0 0 48px; }
+.epigraph { max-width: 30em; margin: -12px auto 56px; }
+.epigraph blockquote { margin: 0; font-style: italic; font-size: 19px; line-height: 1.55; color: var(--ink-2); text-wrap: pretty; }
+.epigraph figcaption { margin-top: 12px; font-size: 16px; color: var(--ink-3); }
+.epigraph cite { font-style: italic; }
 .titlepage .intro { max-width: 34em; margin: 0 auto 48px; text-align: left; }
 .titlepage .intro p { margin: 0 0 14px; }
 .ways { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 28px; margin: 56px auto 0; padding-top: 24px; border-top: 1px solid var(--rule); max-width: 520px; font-size: 17px; }
@@ -451,6 +455,10 @@ function titlePage() {
   tp.innerHTML = `<div class="eyebrow sc">A reference for building, running and scaling design systems</div>
     <h1>The Design System Bible</h1>
     <p class="by">${esc(byline)}</p>
+    <figure class="epigraph">
+      <blockquote>Each pattern describes a problem which occurs over and over again in our environment, and then describes the core of the solution to that problem, in such a way that you can use this solution a million times over, without ever doing it the same way twice.</blockquote>
+      <figcaption><span class="sc">Christopher Alexander</span>, <cite>A Pattern Language</cite>, 1977</figcaption>
+    </figure>
     <div class="intro">
       <p>A design system is the shared set of colors, type, components and rules that keeps a product looking and working the same everywhere, along with the people and habits that keep it that way.</p>
       <p>This book explains how to build one, run one and grow one, from the basics up to working across many teams and with AI. You don't have to read it in order. Ask a question, or open the contents and pick what you need.</p>
