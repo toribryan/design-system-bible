@@ -15,6 +15,7 @@ If you're catching up, New in 2026 is a one-page briefing on what changed from 2
 | Components | Component fundamentals and React component engineering | You're designing or building components |
 |  └ Component A–Z | 61 standard components: usage, accessibility, props, composition | You need the details of one component |
 |  └ Component Composition | How parts fit together in code and Figma, and how every component is built | You're designing a component's API or a pattern |
+|  └ Component Slots | Slot naming, what a slot owns, constraints, accessibility, code and Figma, and a catalog of slots in standard components | You're adding a content region to a component, or teams keep detaching one |
 |  └ Component Testing | Design checks, unit and interaction tests, accessibility, visual regression, lint rules and how to test them | You're deciding what to test, or writing tests and lint rules |
 | Design to Code | Design–code parity, building the system in Figma, documentation | You're building the Figma library or connecting it to code |
 |  └ System Architectures | How tokens, packages, Figma and docs fit together, with diagrams | You're choosing a technical setup |
@@ -31,8 +32,8 @@ If you're catching up, New in 2026 is a one-page briefing on what changed from 2
 | --- | --- |
 | New to design systems | Foundations 1–3 → Components 1 → skim Component A–Z → Reference 2 (books) |
 | A product designer using a system | Foundations 4–5 → Component A–Z → Component Composition 1–4 → Agentic Design Systems 6–8 |
-| A designer building the system | Foundations → Components 1 → Component Composition → Component Testing 2 → Design to Code 2 → Workflows and Playbooks |
-| An engineer building the system | Components 2 → Component Composition → Component Testing → System Architectures → Agentic Design Systems 3–5 |
+| A designer building the system | Foundations → Components 1 → Component Composition → Component Slots 4 and 8 → Component Testing 2 → Design to Code 2 → Workflows and Playbooks |
+| An engineer building the system | Components 2 → Component Composition → Component Slots → Component Testing → System Architectures → Agentic Design Systems 3–5 |
 | A system lead or staff designer | Governance → Decision Frameworks → Strategy and Leadership → Workflows and Playbooks |
 | Bringing in AI agents | Agentic Design Systems → Component Composition 13 → Design to Code 2 (handoff) |
 | Starting or inheriting a system | Workflows and Playbooks 10 → Worked Example → Strategy and Leadership 1–3 → Governance 2–3 |
@@ -52,6 +53,7 @@ If you're catching up, New in 2026 is a one-page briefing on what changed from 2
 | Does this belong in the system? | Decision Frameworks 3.1 |
 | What props should a Select (or any component) have? | Component A–Z |
 | Compound components, slots or props? | Component Composition 2 and 13 |
+| Should this region be a slot, and what should it be called? | Component Slots 2 and 3 |
 | How do I set up variables and components in Figma? | Design to Code 2 |
 | How should token files and packages be structured? | System Architectures 2 and 4 |
 | How do we ship a breaking change? | Governance 10, Decision Frameworks 6.1 |
@@ -82,6 +84,7 @@ Tool versions, Figma plan limits and AI workflows go out of date first, so revie
 | System Architectures | Oct 20, 2026 | Apr 20, 2027 | Token tooling, build pipeline examples |
 | Component A–Z | Oct 20, 2026 | Apr 20, 2027 | Props that track a headless library's API |
 | Component Composition | Oct 20, 2026 | Apr 20, 2027 | `render` / `asChild` conventions |
+| Component Slots | Nov 22, 2026 | Feb 22, 2027 | Figma slot settings, Code Connect slot support |
 | Component Testing | Nov 22, 2026 | Feb 22, 2027 | Storybook and Vitest APIs, lint tooling (ESLint, Oxlint, Biome) |
 | Governance | Oct 20, 2026 | Apr 20, 2027 | Rarely: process, not tools |
 | Decision Frameworks | Oct 20, 2026 | Apr 20, 2027 | AI decisions (section 9) |
@@ -93,6 +96,7 @@ Tool versions, Figma plan limits and AI workflows go out of date first, so revie
 
 | Date | Change |
 | --- | --- |
+| Nov 22, 2026 | Added the Component Slots tab: slot vocabulary, ownership, constraints, accessibility, code, Figma and a slot catalog |
 | Nov 22, 2026 | Added the Component Testing tab: design and engineering testing, accessibility, visual regression, lint rules and lint testing |
 | Oct 22, 2026 | Edited the prose in every tab for clarity; fixed two section references in Governance |
 | Oct 22, 2026 | Added the Worked Example tab (Combobox, request to adoption) |
@@ -662,7 +666,7 @@ Charts need their own color, type and interaction rules: the UI palette was buil
 
 # Components
 
-How to design and build components: the contract every component makes, and how to engineer a React component library in 2026. Three tabs nest under this one: Component A–Z, a field guide to 61 standard components with props; Component Composition, which covers how parts fit together in code and Figma; and Component Testing, which covers how to test components in design and code, including lint.
+How to design and build components: the contract every component makes, and how to engineer a React component library in 2026. Four tabs nest under this one: Component A–Z, a field guide to 61 standard components with props; Component Composition, which covers how parts fit together in code and Figma; Component Slots, which covers the named regions where products put their own content; and Component Testing, which covers how to test components in design and code, including lint.
 
 ## 1. Component fundamentals
 
@@ -3108,7 +3112,7 @@ export const Tabs = { Root, List, Tab, Panel, Indicator };
 
 ## 4. Slots in depth
 
-A slot is a named place in a component where the consumer supplies content. Slots keep the layout, spacing and accessibility wiring in the system while letting the content vary.
+A slot is a named place in a component where the consumer supplies content. Slots keep the layout, spacing and accessibility wiring in the system while letting the content vary. Component Slots covers naming, constraints, accessibility and Figma slots in more depth.
 
 ### Three ways to express slots in React
 
@@ -3619,6 +3623,311 @@ Every form control plugs into Field, so labels, hints, errors and `invalid` work
 The date picker shows why the layering pays off. It adds almost no new logic of its own: positioning, focus trapping, dismissal, label wiring and keyboard movement all come from blocks that other components already use and test. The same holds in Figma: it's assembled from Input, Popover and Calendar instances instead of drawn from scratch, so a change to the Calendar cell or the popover surface flows into the Date picker automatically.
 
 When you plan a new component, find its row neighbors in the map first. If it needs a floating list, it's built on Popover and Listbox; if it's a set of mutually exclusive options, it's Collection + Roving focus with radio semantics. New logic should be the exception, and new building blocks rarer still.
+
+---
+
+# Component Slots
+
+Slots are where the system meets product content. A slot is a named place in a component where the consumer puts their own content, while the component keeps control of layout, spacing and accessibility wiring. Get slots right and teams rarely need to detach or fork a component; get them wrong and every new need becomes a prop, a fork or a broken layout. Component Composition 4 introduces the three ways to write slots in React. This tab goes further: naming, what a slot owns, constraints, accessibility, Figma, docs and testing, plus a catalog of the slots in the standard components.
+
+## 1. One word, several meanings
+
+"Slot" means different things in different tools, and teams talk past each other when they don't say which one they mean.
+
+| Term | Where | What it is |
+| --- | --- | --- |
+| **Slot (the concept)** | Everywhere | A named region in a component that accepts consumer content: `start`, `title`, `actions` |
+| **Slot prop** | React | A prop that takes a `ReactNode`: `<ListItem end={<Tag>Admin</Tag>} />` |
+| **Slot part** | React compound components | A child component that fills a region: `<Card.Footer>` |
+| **`children`** | React | The default slot, the one main content region |
+| **`<slot>` and named slots** | Web Components, Vue; snippets in Svelte | The platform or framework feature for the same idea |
+| **`Slot` (the primitive)** | Radix and shadcn/ui | The component behind `asChild`, which merges props onto its child. It's element control, not a content region (Component Composition 5) |
+| **`slot` prop** | React Aria Components | Tells a child which region of its parent it fills, so the parent can pass it props: `<Heading slot="title">` inside a Dialog |
+| **`data-slot`** | shadcn/ui and many systems | A stable attribute that names a part for styling and tests (Component Composition 10) |
+| **Figma slot** | Figma | A native component property for a free-form content area, generally available since June 2026 (Design to Code 2) |
+
+In this tab, "slot" means the concept. When the mechanism matters, the text names it.
+
+## 2. When a region should be a slot
+
+Four tools can fill a region of a component. Pick the narrowest one that covers real use.
+
+| Tool | Use when the content is… | Example |
+| --- | --- | --- |
+| **Text prop** | Always plain text | `label="Email notifications"` |
+| **Enum or icon prop** | One of a known set | `tone="danger"`, `icon={<TrashIcon />}` from the icon set |
+| **Slot** | Varied, but the region's position and size are fixed | List item `end`: a Tag, a Switch, a timestamp or a menu |
+| **Part** | Optional, repeatable, or needs its own props and wiring | `Dialog.Footer`, `Card.Media`, `Tabs.Tab` |
+
+Signals that a region needs to become a slot:
+
+- **Prop requests that name content types:** `badgeText`, `avatarUrl`, `showTimestamp`, `secondaryAction`. Each is one case of a slot.
+- **High detach rates in Figma** on one component, where people detach to put something different in the same spot (Decision Frameworks 5.2).
+- **`className` overrides and wrappers** in product code that position extra content inside the component.
+- **Forks** that differ from the original only in one region.
+
+Signals that a slot is the wrong answer:
+
+- The content always has the same shape. A slot adds freedom nobody needs and makes the component harder to lint and document.
+- The region is behavior, not content. A dismiss button with fixed placement and label is a prop (`onDismiss`), not an `actions` slot.
+- Teams use the slot to change the layout of the whole component. That's a sign the component needs parts, or that it's two components.
+
+## 3. The slot vocabulary
+
+Slot names are an API, and the same name must mean the same thing in every component, in Figma and in the docs. Agree on a small vocabulary early and use only those names.
+
+| Name | Holds | Used in |
+| --- | --- | --- |
+| `start` / `end` | Leading and trailing content of a row: avatar, icon, checkbox, tag, switch, meta text | List item, Tree item, Menu item, Table cell, Header |
+| `iconStart` / `iconEnd` | One icon, sized and colored by the component | Button, Link, Badge, Tab |
+| `prefix` / `suffix` | Inline adornments inside a text field: currency, unit, search icon, a clear button | Input, Number input, Combobox input |
+| `media` | An image, video, illustration or map at the edge of a container | Card, Empty state, Dialog |
+| `title` / `description` | The heading and supporting text of a container; the title usually names it for assistive tech | Card, Dialog, Alert, Empty state, List item |
+| `actions` | One or more buttons or links that act on the container | Card, Alert, Banner, Empty state, Page header, Toast |
+| `children` | The main content | Every container |
+| `footer` / `header` | A full-width band at the bottom or top | Card, Dialog, Drawer, Popover, Sidebar |
+| `indicator` | A visual state marker: chevron, check, radio dot | Accordion, Select, Checkbox, Menu item |
+| `empty` / `loading` | What renders when there's no content, or while it loads | Combobox, Data table, List, Select |
+
+Rules for names:
+
+- **Logical, never physical.** `start` and `end`, not `left` and `right`, so slots flip in right-to-left layouts.
+- **Role, not content.** `actions`, not `buttons`; `media`, not `image`.
+- **Plural when it holds several.** `actions` holds a group; `indicator` holds one thing.
+- **Same name in every layer.** The prop, the part (`Card.Actions`), the `data-slot` value (`card-actions`), the Figma slot and its layer name, and the docs heading all match.
+
+## 4. What the slot owns and what the content owns
+
+The contract of a slot is a division of labor. The component owns the region; the content owns itself.
+
+| The slot owns | The content owns |
+| --- | --- |
+| Position in the layout and its order in the DOM | Its own internal layout |
+| Spacing between the slot and its neighbors (`gap`) | Its own padding |
+| Alignment and how the region grows, shrinks or truncates | Its own text and its truncation inside the space it gets |
+| Default size and color for icons placed in it | Its own colors beyond the inherited defaults |
+| Collapsing when empty | Being present or absent |
+| Accessibility wiring between regions (`aria-labelledby`, `aria-describedby`) | Its own name, role and state |
+
+Techniques that keep the contract:
+
+- **Spacing comes from `gap`, never margins.** Content in a slot should have no outer margin; the component's `gap` spaces regions, and an empty region adds no space.
+- **Don't render empty wrappers.** If `end` is undefined, render no `end` element, so `gap` doesn't leave a hole.
+- **Icons inherit.** Icons use `currentColor`, and the slot sets a default size: `[data-slot="button"] > svg { width: 1rem; height: 1rem; }`. Let an explicit size class win.
+- **The container can respond to what's in its slots.** With `:has()`, a header switches to two columns only when it has an action, with no extra prop:
+
+```css
+[data-slot="card-header"]:has([data-slot="card-action"]) {
+  grid-template-columns: 1fr auto;
+}
+```
+
+- **Pass props down by context, not by cloning.** A parent can tell a Button in its `actions` slot to be small, or a Heading in its `title` slot to take an ID, through context the child reads. React Aria Components does this with its `slot` prop; your own system can do it with a context per part. Avoid `React.cloneElement` on slot content: it breaks as soon as the content is wrapped.
+
+## 5. Constraining what goes in a slot
+
+Every slot sits somewhere between fully open and fully fixed. Choose deliberately, per slot.
+
+| Level | How | Good for |
+| --- | --- | --- |
+| **Open** | Accept any `ReactNode`; no guidance | `children` of a generic container |
+| **Guided** | Accept any `ReactNode`; docs list allowed content; Figma preferred instances match the list | Most slots: `end`, `actions`, `media` |
+| **Linted** | A lint rule flags known bad content: interactive elements inside interactive slots, a second primary button in `actions` | Slots where misuse is common and costly |
+| **Data, not elements** | Accept data and render it yourself: `actions={[{ label, onClick }]}` | When every use must look and behave the same: toast actions, table row actions |
+
+One trap: TypeScript can't restrict which component is passed as a slot. Every JSX expression has the same type, `JSX.Element`, so `end?: ReactElement<SwitchProps>` won't stop someone passing a `<Tag>`. If a slot truly must hold one kind of thing, take data or a narrow prop instead of an element. Don't inspect `children` at runtime to enforce it either; that breaks with wrappers and fragments (Component Composition 12).
+
+## 6. Accessibility in slots
+
+Slots split one widget across content that different people write, so the component has to connect the pieces.
+
+- **Title slots name their container.** The root generates an ID, the title part uses it, and the container points at it with `aria-labelledby`. Make the title required on Dialog and Drawer, with a visually hidden option and a development warning when it's missing.
+- **Description slots describe it.** Same pattern with `aria-describedby`, only when a description is present.
+- **Let consumers set the heading level.** A title slot that always renders an `h2` is wrong half the time. Accept `as` or `render`, or a `level` prop, with a sensible default.
+- **DOM order is reading and focus order.** Render slots in the order people read them. Don't reorder visually with CSS `order` or `row-reverse`, which puts focus order out of step with what people see.
+- **No interactive content inside an interactive slot.** A button inside a clickable card, or a link inside a button, is invalid and unpredictable for keyboard and screen reader users. Use the stretched link pattern: the card's title link covers the card, and the `actions` slot sits above it.
+- **Decorative content stays silent.** Icons in `start` or `iconStart` are `aria-hidden` unless they carry meaning that the text doesn't.
+- **Icon-only content still needs a name.** An Icon button in `end` needs its own `aria-label`; the slot can't supply one.
+- **Announcements belong to the component.** If slot content changes and people need to know (a result count, a status), the component owns the live region, not the content.
+
+## 7. Slots in code
+
+### Props as slots
+
+```tsx
+import { tv } from 'tailwind-variants';
+
+const listItem = tv({
+  slots: {
+    base: 'flex items-center gap-3 py-2',
+    start: 'shrink-0 text-fg-muted',
+    content: 'min-w-0 flex-1',
+    title: 'truncate font-medium',
+    description: 'text-sm text-fg-muted',
+    end: 'shrink-0',
+  },
+});
+
+type ListItemProps = Omit<React.ComponentProps<'li'>, 'title'> & {
+  start?: React.ReactNode;
+  title: React.ReactNode;
+  description?: React.ReactNode;
+  end?: React.ReactNode;
+};
+
+export function ListItem({ start, title, description, end, className, ...props }: ListItemProps) {
+  const s = listItem();
+  return (
+    <li data-slot="list-item" className={s.base({ className })} {...props}>
+      {start && <span data-slot="list-item-start" className={s.start()}>{start}</span>}
+      <span data-slot="list-item-content" className={s.content()}>
+        <span data-slot="list-item-title" className={s.title()}>{title}</span>
+        {description && <span data-slot="list-item-description" className={s.description()}>{description}</span>}
+      </span>
+      {end && <span data-slot="list-item-end" className={s.end()}>{end}</span>}
+    </li>
+  );
+}
+```
+
+tailwind-variants' `slots` keeps each region's classes, and their variants, in one place, so a `size` variant can change the title and the gap together.
+
+### Slot parts that wire accessibility
+
+```tsx
+const CardContext = createContext<{ titleId: string } | null>(null);
+
+export function Card({ children, ...props }: React.ComponentProps<'article'>) {
+  const titleId = useId();
+  return (
+    <CardContext value={{ titleId }}>
+      <article data-slot="card" aria-labelledby={titleId} {...props}>{children}</article>
+    </CardContext>
+  );
+}
+
+export function CardTitle({ as: Heading = 'h3', ...props }: { as?: 'h2' | 'h3' | 'h4' } & React.ComponentProps<'h3'>) {
+  const ctx = use(CardContext);
+  if (!ctx) throw new Error('Card.Title must be inside Card');
+  return <Heading id={ctx.titleId} data-slot="card-title" {...props} />;
+}
+```
+
+If the title is optional, only set `aria-labelledby` when a title has registered itself, so the card never points at an ID that doesn't exist.
+
+### Slots and Server Components
+
+Slots are how client components hold server-rendered content. A client component can't import a server component, but it can receive one through `children` or a slot prop:
+
+```tsx
+// page.tsx (a server component)
+<Sidebar header={<TeamSwitcher />} footer={<UsageMeter />}>
+  <ProjectList />
+</Sidebar>
+```
+
+`Sidebar` can be a client component with its own state; `UsageMeter` and `ProjectList` can still fetch data on the server. Design layout components with slots and they work on both sides of the boundary.
+
+## 8. Slots in Figma
+
+Figma's native slots (Design to Code 2) let the Figma component match code region for region. The rules that keep them in sync:
+
+| In code | In Figma |
+| --- | --- |
+| Slot prop or slot part, named `actions` | A slot property named `actions` on a layer named `Actions` |
+| Allowed content listed in docs | Preferred instances set to the same list; turn on "Only allow preferred instances" for slots that are guided strictly |
+| Region renders nothing when empty | The slot's auto layout collapses with no content, and the parent's gap closes |
+| Default content in stories | Realistic default content in the main component's slot, so new instances look finished |
+| `start` / `end` | Slots named `start` and `end`; check them in a mirrored right-to-left example |
+| Content limits (one to three actions) | Min and max children on the slot (they warn, they don't block) |
+
+Migrating a library from placeholder swaps to slots:
+
+1. Inventory components that use a placeholder instance or a hidden "swap me" layer, and rank them by detach rate.
+2. Convert the placeholder frame to a slot (Convert to slot), name it to match code, and set preferred instances.
+3. Publish as a minor release with a note: existing instances keep working, and new content goes in the slot.
+4. Update the Code Connect mapping so the slot maps to the code slot.
+5. Watch the detach rate for the next month. If it doesn't drop, the slot is in the wrong place or too narrow.
+
+## 9. Documenting slots
+
+Every component page with slots gets a slots table next to the props table.
+
+| Slot | Accepts | Required | Empty behavior | Notes |
+| --- | --- | --- | --- | --- |
+| `start` | Avatar, Icon, Checkbox | No | Collapses | Icons are decorative unless labeled |
+| `title` | Text, or a Link for a navigable item | Yes | n/a | Names the item for assistive tech |
+| `description` | Text | No | Collapses | Two lines, then truncates |
+| `end` | Tag, Switch, Icon button, meta text | No | Collapses | Only one interactive element |
+
+Then:
+
+- **Show real content in each slot,** one example per allowed type, so people copy the right thing.
+- **Show the don'ts:** two primary buttons in `actions`, a button inside a clickable card, a paragraph in `title`.
+- **Write slot metadata for agents.** List each slot with its accepted components in the component's metadata, so the docs catalog, `llms.txt` and agent guidance all draw from one place (Agentic Design Systems 3).
+
+## 10. Testing slots
+
+Slots multiply the states a component can be in. Test them at each layer of Component Testing:
+
+- **Empty, one, many:** every optional slot with nothing in it (no stray wrapper, no extra gap), with one item, and at the documented maximum.
+- **Extreme content:** a long title next to a wide `end`, a tall `media`, an RTL story where `start` and `end` swap sides.
+- **Accessibility wiring:** the container's name comes from the title slot; the description is linked only when present; tab order follows reading order.
+- **Visual regression:** one story per allowed type of slot content, not just the default.
+- **Lint:** rules for slot misuse, like interactive elements inside interactive slots, with test cases taken from real violations (Component Testing 6).
+
+## 11. Slot catalog
+
+The slots in the standard components (Component A–Z), with what each accepts.
+
+| Component | Slots | Typical content | Notes |
+| --- | --- | --- | --- |
+| Button | `iconStart`, `iconEnd` | One icon | Sized by the button; spinner replaces it while loading |
+| Input | `prefix`, `suffix` | Unit, currency, icon, Icon button | Interactive suffixes need their own labels |
+| Form field | `label`, `description`, `errorMessage`, control as `children` | Text; one control | Wires `aria-describedby` and `aria-invalid` |
+| List item | `start`, `title`, `description`, `end` | Avatar, Checkbox, Tag, Switch, meta | One interactive element in `end` |
+| Menu item | `start` (icon), `children`, `end` (shortcut, submenu indicator) | Icon, text, Kbd | No buttons inside items |
+| Card | `media`, `title`, `description`, `children`, `actions`, `footer` | Image, text, Buttons | Stretched link for clickable cards |
+| Dialog | `title`, `description`, `children`, `footer` | Text, form, Buttons | Title required; footer holds the actions |
+| Drawer | `title`, `description`, `children`, `footer` | Same as Dialog | Footer sticks to the bottom on long content |
+| Alert | `icon`, `title`, `description`, `actions` | Icon from tone, text, Buttons or Links | Icon defaults from `tone` |
+| Banner | `children`, `actions` | Text, one Link or Button | One action, at most |
+| Empty state | `media`, `title`, `description`, `actions` | Illustration, text, Buttons | One primary action |
+| Toast | `title`, `description`, `actions` | Text, one action | Actions as data for consistency |
+| Page header | `title`, `description`, `actions`, `children` (breadcrumb, tabs) | Heading, Buttons, Breadcrumb | Actions collapse into a menu on narrow screens |
+| Header (app bar) | Brand, Nav, Search, Actions, Account | Logo, Navigation, Icon buttons | Products fill regions; the system owns collapse |
+| Data table | Toolbar, `emptyState`, cells | Filters, Empty state, cell content | Cells are slots with column-level rules |
+| Combobox, Select | `empty`, `loading`, item `children` | Text, Spinner, rich rows | Rich rows still need a text value for typeahead |
+| Tabs | Tab `icon`, `children`; Panel `children` | Icon, text, Count | Keep counts out of the accessible name or say them clearly |
+
+## 12. Slot anti-patterns
+
+| Anti-pattern | Looks like | Why it hurts | Instead |
+| --- | --- | --- | --- |
+| Physical names | `left`, `right`, `leftIcon` | Wrong in right-to-left layouts | `start`, `end`, `iconStart` |
+| Prop and slot for one region | `title` and `titleNode`, `icon` and `renderIcon` | Two ways to do one thing; docs and agents pick either | One slot that accepts text or a node |
+| Empty wrappers | `<div class="end"></div>` when `end` is undefined | Extra gap, empty layout boxes | Render the wrapper only when there's content |
+| Margins in slot content | A Tag with `margin-left: 8px` to sit in `end` | Wrong in every other place the Tag is used | The slot's `gap` spaces it |
+| Cloning slot content | `cloneElement(end, { size: 'sm' })` | Breaks when the content is wrapped | Context the content reads |
+| Layout escape hatch | `layout` slot that replaces the whole body | The component no longer guarantees anything | Parts, or a different component |
+| Nested interactive content | A Button in the `actions` of a card that's itself a button | Invalid markup, broken keyboard and screen reader behavior | Stretched link pattern |
+| Too many slots | Ten optional regions on one container | Combinations nobody designed or tested | Fewer slots, or compound parts with recipes |
+| Slots Figma doesn't have | Code has `actions`; Figma uses a hidden layer and detaches | Designs drift from what's buildable | Native Figma slot with the same name |
+
+## 13. Checklist
+
+### New or changed slot
+
+- [ ] The region needs varied content; a text, enum or icon prop wouldn't cover real use
+- [ ] Named from the slot vocabulary, logical not physical
+- [ ] Constraint level chosen (open, guided, linted, data) and written in the docs
+- [ ] Collapses cleanly when empty, with spacing from `gap`
+- [ ] Accessibility wiring in place: title, description, focus order, no nested interactive content
+- [ ] Figma slot with the same name, preferred instances matching the docs, and realistic default content
+- [ ] Code Connect maps the Figma slot to the code slot
+- [ ] Slots table on the docs page, with examples and don'ts
+- [ ] Stories for empty, one, many, extreme content and RTL
+- [ ] Slot metadata updated for the catalog and agent guidance
 
 ---
 
@@ -4174,7 +4483,7 @@ Keep solid colors as variables, not color styles: Check designs can bind to vari
 | Text | Editable labels | `label`, `children` as text |
 | Slot | Free-form content areas | `children` or named slots |
 
-- **Slots** replace the old "placeholder swap" hack. Convert a nested frame with Convert to slot (Cmd/Ctrl+Shift+S) or Wrap in new slot. Optional settings: preferred instances, Only allow preferred instances, min/max children (violations warn, they don't block). You can't bind a slot to the top-level layer or put component properties on layers inside a slot, and removing a slot property wipes instance content. Code Connect supports slots; MCP support was listed as coming soon. Figma has a [migration guide](https://help.figma.com/hc/en-us/articles/38607529833751-Migrate-a-library-to-using-slots).
+- **Slots** replace the old "placeholder swap" hack. Convert a nested frame with Convert to slot (Cmd/Ctrl+Shift+S) or Wrap in new slot. Optional settings: preferred instances, Only allow preferred instances, min/max children (violations warn, they don't block). You can't bind a slot to the top-level layer or put component properties on layers inside a slot, and removing a slot property wipes instance content. Code Connect supports slots; MCP support was listed as coming soon. Figma has a [migration guide](https://help.figma.com/hc/en-us/articles/38607529833751-Migrate-a-library-to-using-slots); Component Slots 8 covers matching Figma slots to code.
 - **Nested instances:** expose a child's properties at the top level (Properties → Expose properties from → Nested instances), e.g. an Input's icon.
 - **Avoid variant explosion:** use variants only for real enums, and booleans and instance swaps for everything else.
 - **Auto layout everywhere:** hug and fill, wrap, min/max sizes, gap and padding bound to spacing variables. Use the grid flow for row-and-column layouts (spanning children must be set to fill).
