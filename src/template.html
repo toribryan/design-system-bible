@@ -237,6 +237,8 @@ mark.hit { background: var(--hit); color: var(--hit-ink); box-shadow: 0 0 0 2px 
 .results a { display: block; padding: 16px 0 16px 18px; margin-left: -18px; border-left: 3px solid transparent; text-decoration: none; border-bottom: 1px solid var(--rule); }
 .results ol li:first-child a { border-top: 1px solid var(--rule); }
 .results a.sel, .results a:hover { border-left-color: var(--accent); background: var(--paper-2); }
+.results a.cmd { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.results a.cmd .title { margin: 0; font-size: 18px; }
 .results .crumb { color: var(--ink-3); font-size: 11.5px; }
 .results .title { font-family: var(--display); font-weight: 600; font-size: 20px; letter-spacing: -0.01em; line-height: 1.3; margin: 3px 0 4px; }
 .results .snip { font-size: 15.5px; line-height: 1.5; color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -816,6 +818,7 @@ function openSheet(sheet) {
 function closeSheets(restore = true) {
   const sheets = [...document.querySelectorAll('.sheet')];
   const wasOpen = sheets.some(x => !x.hidden);
+  if (!searchSheet.hidden) syncUrl('');
   sheets.forEach(x => { x.hidden = true; });
   if (sim) sim.stop();
   document.documentElement.style.overflow = '';
@@ -946,15 +949,57 @@ function snippet(text, re) {
   return s.replace(re, '<mark>$1</mark>');
 }
 
+/* Commands: a search that starts with > runs one of these. */
+const COMMANDS = () => [
+  { title: 'Copy link to this section', hint: 'y', run: copyLink },
+  { title: 'Theme: system', run: () => setTheme('system') },
+  { title: 'Theme: light', run: () => setTheme('light') },
+  { title: 'Theme: dark', run: () => setTheme('dark') },
+  { title: 'Open contents', hint: 'c', run: () => openContents() },
+  { title: 'Open graph', hint: 'g', run: () => openGraph() },
+  { title: 'Keyboard shortcuts', hint: '?', run: openKeys },
+  ...CHAPTERS.filter(ch => ch.slug !== 'start').map(ch => ({ title: `Go to part ${pad(ch.index)}: ${ch.name}`, run: () => go(ch.slug, false, whereLabel()) })),
+];
+
+function renderCommands(query) {
+  const terms = words(query);
+  shown = COMMANDS().filter(c => { const t = c.title.toLowerCase(); return terms.every(w => t.includes(w)); }).map(cmd => ({ cmd }));
+  sel = 0;
+  filters.innerHTML = '';
+  recentEl.hidden = true;
+  meta.textContent = shown.length ? `${shown.length} ${shown.length === 1 ? 'command' : 'commands'}` : 'No command matches.';
+  results.innerHTML = `<li class="group" role="presentation"><div class="group-head mono">Commands</div><ol role="presentation">${shown.map(({ cmd }, i) =>
+    `<li role="presentation"><a href="#" role="option" data-i="${i}" class="cmd${i === 0 ? ' sel' : ''}" aria-selected="${i === 0}"><span class="title">${esc(cmd.title)}</span>${cmd.hint ? `<kbd class="key">${esc(cmd.hint)}</kbd>` : ''}</a></li>`).join('')}</ol></li>`;
+}
+
+// "in:found" or "in:a-z" narrows to the first part whose slug or name starts with it.
+function partFor(token) {
+  const t = token.toLowerCase();
+  return CHAPTERS.find(ch => ch.slug.startsWith(t)) || CHAPTERS.find(ch => words(ch.name).some(w => w.startsWith(t))) || null;
+}
+function parseQuery(raw) {
+  let part = null;
+  const text = raw.replace(/(^|\s)in:(\S+)/gi, (_, sp, t) => { part = partFor(t) || part; return ' '; }).trim();
+  return { text, part };
+}
+
+function syncUrl(raw) {
+  const url = location.pathname + (raw ? `?q=${encodeURIComponent(raw)}` : '') + location.hash;
+  try { history.replaceState(history.state, '', url); } catch (e) {}
+}
+
 function renderResults() {
-  const query = q.value.trim();
+  const raw = q.value.trim();
+  syncUrl(raw);
+  if (raw.startsWith('>')) return renderCommands(raw.slice(1));
+  const { text: query, part } = parseQuery(raw);
+  only = part;
   const { list, used } = search(query);
   hits = list;
   lastTerms = used;
-  if (only && !hits.some(h => h.s.ch === only)) only = null;
-  recentEl.hidden = !!query;
+  recentEl.hidden = !!raw;
   if (!query) {
-    meta.textContent = `Searches every section of all ${CHAPTERS.length} parts. Plurals, partial words and small typos still match.`;
+    meta.textContent = `Searches every section of all ${CHAPTERS.length} parts. Plurals, partial words and typos still match. Add in:part to narrow, or start with > for commands.`;
     results.innerHTML = filters.innerHTML = '';
     shown = [];
     renderRecent();
@@ -964,8 +1009,8 @@ function renderResults() {
   const counts = new Map();
   for (const h of hits) counts.set(h.s.ch, (counts.get(h.s.ch) || 0) + 1);
   const parts = [...counts.keys()].sort((a, b) => a.index - b.index);
-  filters.innerHTML = parts.length > 1 ? [`<button data-part="" aria-pressed="${!only}">All ${hits.length}</button>`]
-    .concat(parts.map(ch => `<button data-part="${ch.slug}" aria-pressed="${only === ch}">${esc(ch.name)} ${counts.get(ch)}</button>`)).join('') : '';
+  filters.innerHTML = parts.length > 1 || only ? [`<button data-part="" aria-pressed="${!only}">All ${hits.length}</button>`]
+    .concat(parts.map(ch => `<button data-part="${ch.slug}" aria-pressed="${only === ch}" title="in:${ch.slug}">${esc(ch.name)} ${counts.get(ch)}</button>`)).join('') : '';
   shown = only ? hits.filter(h => h.s.ch === only) : hits;
   sel = 0;
   meta.textContent = hits.length ? `${hits.length === 60 ? 'Top 60' : hits.length} ${hits.length === 1 ? 'passage' : 'passages'} for “${query}”${only ? ` in ${only.name}` : ''}` : `Nothing matches “${query}”. Try fewer or broader words.`;
@@ -1012,6 +1057,7 @@ recentEl.addEventListener('click', e => {
 function openResult(i) {
   const h = shown[i];
   if (!h) return;
+  if (h.cmd) { closeSheets(false); h.cmd.run(); return; }
   saveRecent(q.value.trim());
   const re = termRegex(lastTerms);
   closeSheets(false);
@@ -1057,17 +1103,18 @@ function clearHits() {
 function openSearch(prefill) {
   openSheet(searchSheet);
   if (prefill !== undefined) q.value = prefill;
-  only = null;
   renderResults();
   q.focus(); q.select();
 }
 $('#open-search').addEventListener('click', () => openSearch());
-q.addEventListener('input', () => { only = null; renderResults(); });
+q.addEventListener('input', renderResults);
 filters.addEventListener('click', e => {
   const b = e.target.closest('[data-part]');
   if (!b) return;
-  only = b.dataset.part ? bySlug[b.dataset.part] : null;
+  const rest = q.value.replace(/(^|\s)in:\S+/gi, ' ').trim();
+  q.value = b.dataset.part ? `${rest} in:${b.dataset.part}` : rest;
   renderResults();
+  q.focus();
 });
 results.addEventListener('click', e => {
   const a = e.target.closest('a[data-i]');
@@ -1355,6 +1402,8 @@ addEventListener('resize', () => { if (!graphSheet.hidden) sizeCanvas(); });
 document.querySelectorAll('[data-mark]').forEach(drawMark);
 build();
 go(location.hash.slice(1) || 'start');
+const sharedQuery = new URLSearchParams(location.search).get('q');
+if (sharedQuery) openSearch(sharedQuery);
 </script>
 </body>
 </html>
