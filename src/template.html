@@ -152,6 +152,15 @@ article h3 { font-size: 21px; font-weight: 600; line-height: 1.3; letter-spacing
 article h4 { font-family: var(--mono); font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-2); margin: 32px 0 6px; }
 article .num { display: block; font-family: var(--mono); font-size: 12.5px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); margin-bottom: 12px; }
 article h3 .num { display: inline; margin: 0 0.5em 0 0; font-size: 15px; letter-spacing: 0; }
+article h2, article h3 { position: relative; }
+.hx { display: inline-flex; gap: 2px; margin-left: 10px; vertical-align: 0.2em; opacity: 0; transition: opacity 0.15s ease-out; }
+article h2:hover .hx, article h3:hover .hx, .hx:focus-within { opacity: 1; }
+.hx button, .copy-code { padding: 2px 6px; font-size: 11px; color: var(--ink-3); border: 1px solid var(--rule); background: var(--paper); }
+.hx button:hover, .copy-code:hover { color: var(--ink); border-color: var(--ink); }
+@media (hover: none) { .hx { opacity: 0.6; } }
+pre { position: relative; }
+.copy-code { position: absolute; top: 8px; right: 8px; opacity: 0; }
+pre:hover .copy-code, .copy-code:focus-visible { opacity: 1; }
 article h2.letter { font-family: var(--pixel); font-weight: 400; font-size: 56px; letter-spacing: 0; margin: 96px 0 8px; padding-bottom: 8px; border-bottom: 1px solid var(--ink); }
 article h2.letter + h3 { margin-top: 20px; }
 article p, article ul, article ol { margin: 0 0 18px; }
@@ -355,6 +364,7 @@ kbd.key { display: inline-block; min-width: 1.9em; padding: 1px 6px; border: 1px
       <thead><tr><th colspan="2">Do</th></tr></thead>
       <tbody>
         <tr><td><kbd class="key">y</kbd></td><td>Copy a link to the section you're reading</td></tr>
+        <tr><td><kbd class="key">m</kbd></td><td>Copy that section as Markdown, with its source link</td></tr>
         <tr><td><kbd class="key">t</kbd></td><td>Switch theme: system, light, dark</td></tr>
         <tr><td><kbd class="key">?</kbd></td><td>This sheet</td></tr>
         <tr><td><kbd class="key">esc</kbd></td><td>Close whatever is open</td></tr>
@@ -430,6 +440,7 @@ function build() {
     const art = document.createElement('article');
     art.innerHTML = marked.parse(p.lines.join('\n').replace(/\n-{3,}\s*$/, ''));
     ch.el = art;
+    ch.lines = p.lines;
     ch.heads = [];
     art.querySelectorAll('h2, h3, h4').forEach(h => {
       const text = h.textContent.trim();
@@ -485,7 +496,44 @@ function build() {
 
   CHAPTERS.forEach(linkRefs);
   indexSections();
+  CHAPTERS.forEach(mapMarkdown);
+  CHAPTERS.forEach(addHeadingTools);
   for (const ch of CHAPTERS) ch.nav = ch.heads.filter(h => h.level === 2 ? h.text.length > 1 : h.level === 3 && ch.slug === 'component-a-z');
+}
+
+// Pairs each rendered h2-h4 with its source line, so any section can be copied back out as Markdown.
+function mapMarkdown(ch) {
+  const marks = [];
+  let fence = false;
+  ch.lines.forEach((line, i) => {
+    if (/^\s*(```|~~~)/.test(line)) fence = !fence;
+    const m = !fence && line.match(/^(#{2,4})\s/);
+    if (m) marks.push({ line: i, level: m[1].length });
+  });
+  if (marks.length !== ch.heads.length) { console.warn(`Markdown headings out of step in ${ch.slug}`); return; }
+  marks.forEach((mk, i) => {
+    const end = marks.slice(i + 1).find(n => n.level <= mk.level);
+    ch.heads[i].md = ch.lines.slice(mk.line, end ? end.line : ch.lines.length).join('\n').trim();
+  });
+}
+
+function addHeadingTools(ch) {
+  for (const h of ch.heads) {
+    if (h.level > 3 || h.el.classList.contains('letter') || !ch.el.contains(h.el)) continue;
+    const label = (h.num ? h.num + ' ' : '') + h.name;
+    const tools = document.createElement('span');
+    tools.className = 'hx';
+    tools.innerHTML = `<button class="mono" data-copy-link="${h.id}" aria-label="Copy link to ${esc(label)}">#</button>` +
+      (h.md ? `<button class="mono" data-copy-md="${h.id}" aria-label="Copy ${esc(label)} as Markdown">MD</button>` : '');
+    h.el.appendChild(tools);
+  }
+  ch.el.querySelectorAll('pre').forEach(pre => {
+    const b = document.createElement('button');
+    b.className = 'copy-code mono';
+    b.textContent = 'Copy';
+    b.setAttribute('aria-label', 'Copy code');
+    pre.appendChild(b);
+  });
 }
 
 function sectionTarget(ch, num) {
@@ -698,7 +746,29 @@ function readingId() {
   const h = lastAbove(current.nav, $('#head').getBoundingClientRect().bottom + 48);
   return h ? h.id : current.slug;
 }
-function copyLink() { copy(linkTo(readingId()), `Copied link to ${whereLabel()}`); }
+function copyLink(id = readingId()) {
+  const h = findHead(id);
+  copy(linkTo(id), `Copied link to ${h ? (h.num ? h.num + ' ' : '') + h.name : whereLabel()}`);
+}
+function findHead(id) {
+  const ch = bySlug[id.split('.')[0]];
+  return ch && ch.heads.find(h => h.id === id);
+}
+function copySection(id = readingId()) {
+  const ch = bySlug[id.split('.')[0]];
+  if (!ch || ch.slug === 'start') return toast('Open a part to copy it as Markdown');
+  const h = findHead(id);
+  const md = h && h.md ? h.md : `# ${ch.title}\n\n${ch.lines.join('\n').trim()}`;
+  copy(md + `\n\nSource: ${linkTo(id)}\n`, `Copied ${h ? (h.num ? h.num + ' ' : '') + h.name : ch.name} as Markdown, ${md.split('\n').length} lines`);
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-copy-link], [data-copy-md], .copy-code');
+  if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  if (b.dataset.copyLink) { go(b.dataset.copyLink); copyLink(b.dataset.copyLink); }
+  else if (b.dataset.copyMd) copySection(b.dataset.copyMd);
+  else copy(b.parentNode.querySelector('code').textContent, 'Copied code');
+}, true);
 
 const THEMES = ['system', 'light', 'dark'];
 function setTheme(t) {
@@ -725,7 +795,7 @@ function stepPart(d) {
 const keysSheet = $('#keys-sheet');
 function openKeys() { openSheet(keysSheet); $('[data-close]', keysSheet).focus(); }
 
-const KEYS = { j: () => stepSection(1), k: () => stepSection(-1), ']': () => stepPart(1), '[': () => stepPart(-1), s: () => { if (!here.hidden) toc.hidden ? openToc() : closeToc(); }, y: copyLink, t: cycleTheme, c: () => openContents(), g: () => openGraph(), '?': openKeys };
+const KEYS = { j: () => stepSection(1), k: () => stepSection(-1), ']': () => stepPart(1), '[': () => stepPart(-1), s: () => { if (!here.hidden) toc.hidden ? openToc() : closeToc(); }, y: () => copyLink(), m: () => copySection(), t: cycleTheme, c: () => openContents(), g: () => openGraph(), '?': openKeys };
 document.addEventListener('keydown', e => {
   if (e.metaKey || e.ctrlKey || e.altKey || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
   const sheetOpen = [...document.querySelectorAll('.sheet')].some(x => !x.hidden);
@@ -951,7 +1021,8 @@ function snippet(text, re) {
 
 /* Commands: a search that starts with > runs one of these. */
 const COMMANDS = () => [
-  { title: 'Copy link to this section', hint: 'y', run: copyLink },
+  { title: 'Copy link to this section', hint: 'y', run: () => copyLink() },
+  { title: 'Copy this section as Markdown', hint: 'm', run: () => copySection() },
   { title: 'Theme: system', run: () => setTheme('system') },
   { title: 'Theme: light', run: () => setTheme('light') },
   { title: 'Theme: dark', run: () => setTheme('dark') },
@@ -1077,7 +1148,7 @@ function markHits(id, re) {
   while (el && !isHead(el)) { blocks.push(el); el = el.nextElementSibling; }
   const marks = [];
   for (const b of blocks) {
-    const walker = document.createTreeWalker(b, NodeFilter.SHOW_TEXT, { acceptNode: n => n.parentElement.closest('.num, pre') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+    const walker = document.createTreeWalker(b, NodeFilter.SHOW_TEXT, { acceptNode: n => n.parentElement.closest('.num, .hx, pre') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
     const nodes = [];
     while (walker.nextNode()) nodes.push(walker.currentNode);
     for (const node of nodes) {
