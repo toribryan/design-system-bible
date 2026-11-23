@@ -69,6 +69,40 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .head button:hover, .head .title:hover span { text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--accent); }
 .head kbd { font: inherit; color: var(--ink-3); margin-left: 6px; }
 
+.head .grow { flex: 1; }
+.here { display: flex; align-items: baseline; gap: 10px; min-width: 0; max-width: 46vw; color: var(--ink-3); white-space: nowrap; }
+.here span { overflow: hidden; text-overflow: ellipsis; }
+.here #here-sec { color: var(--ink); }
+.here::after { content: "▾"; color: var(--ink-3); }
+.here[aria-expanded="true"]::after { content: "▴"; }
+.here:hover #here-sec { text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--accent); }
+.progress { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--accent); transform: scaleX(0); transform-origin: left; pointer-events: none; }
+.linenav { --line: color-mix(in srgb, var(--ink) 22%, transparent); position: fixed; z-index: 10; left: max(28px, env(safe-area-inset-left, 0px)); top: calc(50% + var(--head) / 2); transform: translateY(-50%); display: none; flex-direction: column; gap: 8px; width: calc((100vw - var(--measure)) / 2 - 64px); max-height: calc(100vh - var(--head) - 64px); padding: 21px 0; overflow-y: auto; scrollbar-width: none; }
+.linenav::-webkit-scrollbar { display: none; }
+.linenav a { position: relative; flex: none; display: flex; align-items: center; gap: 12px; height: 1px; text-decoration: none; }
+.linenav a::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 24px; transform: translateY(-50%); }
+.linenav a:focus-visible { outline-offset: 8px; }
+.linenav i, .linenav b { display: block; flex: none; width: 24px; height: 1px; background: var(--line); }
+.linenav i { transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease-out; }
+.linenav span { min-width: 0; font-size: 13px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink-3); transition: color 0.2s ease-out; }
+.linenav a:hover i, .linenav a[aria-current] i { width: 40px; background: var(--ink); }
+.linenav a:hover span, .linenav a[aria-current] span { color: var(--ink); }
+.linenav.letters span { font-family: var(--pixel); font-size: 12px; }
+@media (min-width: 1180px) { .linenav { display: flex; } }
+.toc { position: fixed; top: calc(env(safe-area-inset-top, 0px) + var(--head)); left: 0; right: 0; z-index: 19; max-height: min(70vh, 640px); overflow-y: auto; background: var(--paper); border-bottom: 1px solid var(--ink); padding: 20px max(16px, env(safe-area-inset-right, 0px)) 28px max(16px, env(safe-area-inset-left, 0px)); }
+.toc-inner { max-width: var(--measure); margin: 0 auto; }
+.toc .top { display: inline-block; margin-bottom: 12px; color: var(--ink-3); text-decoration: none; }
+.toc .top:hover { color: var(--ink); }
+.toc ol { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 28px; }
+.toc li { break-inside: avoid; }
+.toc li a { display: flex; gap: 10px; padding: 5px 0; text-decoration: none; color: var(--ink-2); line-height: 1.35; font-size: 16px; }
+.toc li a:hover { color: var(--ink); text-decoration: underline; text-decoration-color: var(--accent); }
+.toc li .n { flex: none; min-width: 2.6em; font-family: var(--mono); font-size: 12.5px; color: var(--ink-3); padding-top: 2px; }
+.toc li.on a { color: var(--ink); font-weight: 600; }
+.toc li.on .n::before { content: "■ "; color: var(--accent); }
+.toc ol.letters { columns: auto; display: flex; flex-wrap: wrap; gap: 2px 14px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--rule); }
+.toc ol.letters a { font-family: var(--pixel); font-size: 18px; padding: 2px 0; }
+
 main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 120px; }
 .page { max-width: var(--measure); margin: 0 auto; }
 
@@ -210,6 +244,9 @@ figure.diagram span { color: var(--ink-2); }
   body { font-size: 17px; }
   .head { gap: 16px; }
   .head kbd { display: none; }
+  .head .title span { display: none; }
+  .here { max-width: none; }
+  .toc ol { columns: 1; }
   .opener { padding: 40px 0 40px; }
   .titlepage { padding: 40px 0 48px; }
   article h2 { font-size: 27px; margin-top: 64px; }
@@ -222,18 +259,23 @@ figure.diagram span { color: var(--ink-2); }
   .pager .t { font-size: 19px; }
   .ask kbd { display: none; }
 }
-@media (prefers-reduced-motion: reduce) { .flash { animation: none; } .ask::after { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .linenav i, .linenav span { transition: none; } .flash { animation: none; } .ask::after { animation: none; } }
 </style>
 </head>
 <body>
 
 <header class="head" id="head">
-  <a class="title" href="#start"><svg class="mark" data-mark="clean" data-cell="2" aria-hidden="true"></svg><span>The Design System Bible</span></a>
+  <a class="title" href="#start" aria-label="The Design System Bible, title page"><svg class="mark" data-mark="clean" data-cell="2" aria-hidden="true"></svg><span>The Design System Bible</span></a>
+  <button class="here mono" id="here" aria-expanded="false" aria-controls="toc" aria-label="Sections in this part" hidden><span id="here-part"></span><span id="here-sec"></span></button>
+  <span class="grow"></span>
   <button id="open-contents" class="mono" aria-haspopup="dialog">Contents</button>
   <button id="open-graph" class="mono" aria-haspopup="dialog">Graph</button>
   <button id="open-search" class="mono" aria-haspopup="dialog">Search<kbd>/</kbd></button>
+  <div class="progress" id="progress"></div>
 </header>
+<nav class="toc" id="toc" aria-label="Sections in this part" hidden><div class="toc-inner" id="toc-inner"></div></nav>
 <main><div class="page" id="page"></div></main>
+<nav class="linenav" id="linenav" aria-label="Sections in this part" hidden></nav>
 
 <div class="sheet" id="contents-sheet" role="dialog" aria-modal="true" aria-label="Contents" hidden>
   <div class="sheet-head"><span class="mono">The Design System Bible</span><button class="mono" data-close>Close</button></div>
@@ -335,7 +377,7 @@ function build() {
         h.innerHTML = h.innerHTML.replace(m[0].trimEnd(), `<span class="num">${label}</span>`);
       }
       if (h.tagName === 'H2' && /^[A-Z]$/.test(text)) h.classList.add('letter');
-      ch.heads.push({ el: h, level: +h.tagName[1], text, id });
+      ch.heads.push({ el: h, level: +h.tagName[1], text, id, num: m ? m[1] : '', name: m ? text.slice(m[0].length) : text });
     });
     art.querySelectorAll('p > em:only-child').forEach(em => {
       const t = em.textContent.trim();
@@ -378,6 +420,7 @@ function build() {
 
   CHAPTERS.forEach(linkRefs);
   indexSections();
+  for (const ch of CHAPTERS) ch.nav = ch.heads.filter(h => h.level === 2 ? h.text.length > 1 : h.level === 3 && ch.slug === 'component-a-z');
 }
 
 function sectionTarget(ch, num) {
@@ -454,6 +497,11 @@ function indexSections() {
 let current = null;
 function mount(ch) {
   current = ch;
+  curHead = undefined;
+  closeToc();
+  here.hidden = ch.slug === 'start';
+  renderLineNav(ch);
+  $('#here-part').textContent = `${pad(ch.index)} ${ch.name}`;
   const page = $('#page');
   page.innerHTML = '';
   if (ch.slug === 'start') page.appendChild(titlePage());
@@ -523,6 +571,7 @@ function go(token, flash) {
     if (flash) { target.classList.remove('flash'); void target.offsetWidth; target.classList.add('flash'); }
   } else scrollTo(0, 0);
   try { history.replaceState(null, '', '#' + (target ? token : ch.slug)); } catch (e) {}
+  updateHere();
 }
 
 document.addEventListener('click', e => {
@@ -530,10 +579,80 @@ document.addEventListener('click', e => {
   if (!a || e.metaKey || e.ctrlKey) return;
   e.preventDefault();
   closeSheets(false);
+  closeToc();
   go(a.getAttribute('href').slice(1), true);
 });
 addEventListener('hashchange', () => go(location.hash.slice(1)));
-addEventListener('scroll', () => $('#head').classList.toggle('scrolled', scrollY > 8), { passive: true });
+
+/* Running head */
+const here = $('#here'), toc = $('#toc'), progress = $('#progress');
+let curHead = null, lineActive = null, tick = 0;
+
+function lastAbove(list, line) {
+  let h = null;
+  for (const x of list) { if (x.el.getBoundingClientRect().top <= line) h = x; else break; }
+  return h;
+}
+
+function updateHere() {
+  tick = 0;
+  const max = document.documentElement.scrollHeight - innerHeight;
+  progress.style.transform = `scaleX(${max > 0 ? Math.min(1, scrollY / max) : 0})`;
+  if (!current || current.slug === 'start') return;
+  const line = $('#head').getBoundingClientRect().bottom + 48;
+  updateLineNav(line);
+  const h = lastAbove(current.nav, line);
+  if (h === curHead) return;
+  curHead = h;
+  $('#here-sec').textContent = h ? (h.num ? h.num + ' ' : '') + h.name : '';
+}
+addEventListener('scroll', () => { if (!tick) tick = requestAnimationFrame(updateHere); }, { passive: true });
+
+/* Line nav: the current part's sections as a ruler in the left margin, wide screens only. */
+const lineNav = $('#linenav');
+const lineItems = ch => ch.slug === 'component-a-z' ? ch.heads.filter(h => h.level === 2) : ch.nav;
+
+function renderLineNav(ch) {
+  const items = ch.slug === 'start' ? [] : lineItems(ch);
+  lineActive = undefined;
+  lineNav.hidden = !items.length;
+  lineNav.classList.toggle('letters', ch.slug === 'component-a-z');
+  lineNav.innerHTML = items.map((h, i) => `<a href="#${h.id}"><i></i><span>${esc(h.name)}</span></a>` +
+    (i < items.length - 1 ? '<b aria-hidden="true"></b><b aria-hidden="true"></b>' : '')).join('');
+}
+
+function updateLineNav(line) {
+  const items = lineItems(current);
+  const h = lastAbove(items, line);
+  if (h === lineActive) return;
+  lineActive = h;
+  const links = lineNav.querySelectorAll('a');
+  links.forEach((a, i) => items[i] === h ? a.setAttribute('aria-current', 'location') : a.removeAttribute('aria-current'));
+  const on = h && links[items.indexOf(h)];
+  if (!on) return;
+  const top = on.offsetTop - lineNav.clientHeight / 2;
+  lineNav.scrollTo({ top, behavior: reduceMotion.matches ? 'auto' : 'smooth' });
+}
+
+function openToc() {
+  const az = current.slug === 'component-a-z';
+  const item = h => `<li class="${h === curHead ? 'on' : ''}"><a href="#${h.id}"><span class="n">${esc(h.num)}</span><span>${esc(h.name)}</span></a></li>`;
+  const letters = az ? `<ol class="letters">${current.heads.filter(h => h.level === 2).map(h => `<li><a href="#${h.id}">${esc(h.text)}</a></li>`).join('')}</ol>` : '';
+  $('#toc-inner').innerHTML = `<a class="top mono" href="#${current.slug}">↑ Part ${pad(current.index)}, ${esc(current.name)}</a>${letters}<ol>${current.nav.map(item).join('')}</ol>`;
+  toc.hidden = false;
+  here.setAttribute('aria-expanded', 'true');
+  const on = toc.querySelector('li.on a') || toc.querySelector('a');
+  on.scrollIntoView({ block: 'nearest' });
+  on.focus({ preventScroll: true });
+}
+function closeToc(restore) {
+  if (toc.hidden) return;
+  toc.hidden = true;
+  here.setAttribute('aria-expanded', 'false');
+  if (restore) here.focus();
+}
+here.addEventListener('click', () => toc.hidden ? openToc() : closeToc());
+document.addEventListener('pointerdown', e => { if (!toc.hidden && !toc.contains(e.target) && !here.contains(e.target)) closeToc(); });
 
 /* Sheets */
 const contentsSheet = $('#contents-sheet'), searchSheet = $('#search-sheet'), graphSheet = $('#graph-sheet');
@@ -657,7 +776,7 @@ q.addEventListener('keydown', e => {
   else if (e.key === 'Enter' && hits[sel]) { e.preventDefault(); closeSheets(false); go(hits[sel].s.id, true); }
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeSheets(); return; }
+  if (e.key === 'Escape') { if (!toc.hidden) closeToc(true); else closeSheets(); return; }
   const typing = /INPUT|TEXTAREA/.test(document.activeElement.tagName);
   if ((e.key === '/' && !typing) || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) { e.preventDefault(); openSearch(); }
 });
