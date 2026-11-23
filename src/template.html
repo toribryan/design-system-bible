@@ -218,9 +218,23 @@ figure.diagram span { color: var(--ink-2); }
 .search-field input::placeholder { color: var(--ink-3); opacity: 0.6; font-weight: 500; }
 .search-field input::-webkit-search-cancel-button { display: none; }
 .meta { font-family: var(--mono); font-size: 12.5px; color: var(--ink-3); margin: 14px 0 28px; }
-.results { list-style: none; margin: 0; padding: 0; }
+.results, .results ol { list-style: none; margin: 0; padding: 0; }
+.results .group + .group { margin-top: 28px; }
+.group-head { display: flex; justify-content: space-between; color: var(--ink); padding-bottom: 8px; }
+.group-head button { color: var(--ink-3); text-transform: uppercase; }
+.group-head button:hover { color: var(--ink); }
+.filters { display: flex; flex-wrap: wrap; gap: 6px 8px; margin: -12px 0 28px; }
+.filters:empty { display: none; }
+.filters button { padding: 5px 9px; border: 1px solid var(--rule); color: var(--ink-2); text-transform: uppercase; }
+.filters button:hover { border-color: var(--ink); }
+.filters button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.recent ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+.recent li button { display: block; width: 100%; text-align: left; padding: 10px 0; border-bottom: 1px solid var(--rule); font-family: var(--display); font-weight: 600; font-size: 18px; }
+.recent li button:hover { color: var(--ink-3); }
+.recent li button::before { content: "↺  "; font-family: var(--mono); font-weight: 400; color: var(--ink-3); }
+mark.hit { background: var(--hit); color: var(--hit-ink); box-shadow: 0 0 0 2px var(--hit); }
 .results a { display: block; padding: 16px 0 16px 18px; margin-left: -18px; border-left: 3px solid transparent; text-decoration: none; border-bottom: 1px solid var(--rule); }
-.results li:first-child a { border-top: 1px solid var(--rule); }
+.results ol li:first-child a { border-top: 1px solid var(--rule); }
 .results a.sel, .results a:hover { border-left-color: var(--accent); background: var(--paper-2); }
 .results .crumb { color: var(--ink-3); font-size: 11.5px; }
 .results .title { font-family: var(--display); font-weight: 600; font-size: 20px; letter-spacing: -0.01em; line-height: 1.3; margin: 3px 0 4px; }
@@ -296,7 +310,9 @@ figure.diagram span { color: var(--ink-2); }
   <div class="sheet-body">
     <div class="search-field"><label for="q">Search</label><input id="q" type="search" placeholder="a token, a component, a decision…" autocomplete="off" spellcheck="false" aria-controls="results"></div>
     <p class="meta" id="meta"></p>
-    <ol class="results" id="results" role="listbox"></ol>
+    <div class="filters mono" id="filters" aria-label="Filter by part"></div>
+    <div class="recent" id="recent"></div>
+    <ol class="results" id="results" role="listbox" aria-label="Results"></ol>
   </div>
 </div>
 
@@ -487,7 +503,8 @@ function indexSections() {
     }
     for (const s of list) {
       if (s.parent.length === 1) s.parent = '';
-      s.tl = s.title.toLowerCase(); s.pl = (s.parent + ' ' + ch.name).toLowerCase(); s.bl = s.text.toLowerCase();
+      s.tl = s.title.toLowerCase(); s.bl = s.text.toLowerCase();
+      indexTerms(s);
     }
     SECTIONS.push(...list.filter(s => s.text.trim() || s.title.length > 1));
   }
@@ -557,6 +574,7 @@ function titlePage() {
 }
 
 function go(token, flash) {
+  clearHits();
   const ch = bySlug[token.split('.')[0]] || bySlug.start;
   if (ch !== current) mount(ch);
   if (ch.slug === 'start' && token.includes('.')) {
@@ -695,85 +713,240 @@ function openContents() {
 $('#open-contents').addEventListener('click', openContents);
 
 /* Search */
-const q = $('#q'), results = $('#results'), meta = $('#meta');
-let hits = [], sel = 0;
+const q = $('#q'), results = $('#results'), meta = $('#meta'), filters = $('#filters'), recentEl = $('#recent');
+const VOCAB = new Set();
+let hits = [], shown = [], sel = 0, only = null, lastTerms = [];
+
+const words = str => str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').split(/[^a-z0-9]+/).filter(Boolean);
+function stem(w) {
+  if (w.length <= 3) return w;
+  if (w.endsWith('ies') && w.length > 4) return w.slice(0, -3) + 'y';
+  if (w.endsWith('ing') && w.length > 5) return w.slice(0, -3);
+  if (w.endsWith('ed') && w.length > 4) return w.slice(0, -2);
+  if (w.endsWith('es') && /(ss|x|ch|sh)es$/.test(w)) return w.slice(0, -2);
+  if (w.endsWith('s') && !w.endsWith('ss')) return w.slice(0, -1);
+  return w;
+}
+const stems = str => words(str).map(stem);
+
+function indexTerms(s) {
+  s.tset = new Set(stems(s.title));
+  s.pset = new Set(stems(s.parent + ' ' + s.ch.name));
+  s.bcount = new Map();
+  for (const w of stems(s.text)) s.bcount.set(w, (s.bcount.get(w) || 0) + 1);
+  for (const w of s.tset) VOCAB.add(w);
+  for (const w of s.bcount.keys()) VOCAB.add(w);
+}
+
+function within(a, b, max) {
+  if (Math.abs(a.length - b.length) > max) return false;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const row = [i];
+    let best = i;
+    for (let j = 1; j <= b.length; j++) {
+      row[j] = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      best = Math.min(best, row[j]);
+    }
+    if (best > max) return false;
+    prev = row;
+  }
+  return prev[b.length] <= max;
+}
+
+// Each query word becomes the stems it could mean: itself, longer words it starts, and near misses for typos.
+function expand(t) {
+  const out = new Map([[t, 1]]);
+  const typo = t.length >= 8 ? 2 : t.length >= 4 ? 1 : 0;
+  for (const w of VOCAB) {
+    if (w === t) continue;
+    if (t.length >= 3 && w.startsWith(t)) out.set(w, 0.7);
+    else if (typo && within(t, w, typo)) out.set(w, 0.5);
+  }
+  return [...out].sort((a, b) => b[1] - a[1]).slice(0, 16);
+}
 
 function search(query) {
   const phrase = query.toLowerCase().trim();
-  const terms = phrase.split(/\s+/).filter(Boolean);
-  if (!terms.length) return [];
+  const terms = stems(phrase);
+  if (!terms.length) return { list: [], used: [] };
+  const groups = terms.map(expand);
+  const used = new Set();
   const out = [];
   for (const s of SECTIONS) {
     let score = 0, ok = true;
-    for (const t of terms) {
-      const inT = s.tl.includes(t), inP = s.pl.includes(t);
-      let n = 0, i = s.bl.indexOf(t);
-      while (i !== -1 && n < 10) { n++; i = s.bl.indexOf(t, i + t.length); }
-      if (!inT && !inP && !n) { ok = false; break; }
-      score += (inT ? 12 : 0) + (inP ? 3 : 0) + n;
+    for (const g of groups) {
+      let best = 0, bestW = null;
+      for (const [w, weight] of g) {
+        const v = ((s.tset.has(w) ? 12 : 0) + (s.pset.has(w) ? 3 : 0) + Math.min(10, s.bcount.get(w) || 0)) * weight;
+        if (v > best) { best = v; bestW = w; }
+      }
+      if (!best) { ok = false; break; }
+      score += best;
+      s.matched = s.matched || [];
+      s.matched.push(bestW);
     }
+    const matched = s.matched; s.matched = null;
     if (!ok) continue;
+    matched.forEach(w => used.add(w));
     if (s.tl === phrase) score += 60;
     else if (s.tl.startsWith(phrase)) score += 25;
     else if (s.tl.includes(phrase)) score += 15;
     if (terms.length > 1 && s.bl.includes(phrase)) score += 10;
     out.push({ s, score });
   }
-  return out.sort((a, b) => b.score - a.score).slice(0, 40);
+  return { list: out.sort((a, b) => b.score - a.score).slice(0, 60), used: [...used] };
 }
 
-function snippet(text, terms) {
-  const low = text.toLowerCase();
-  let i = -1;
-  for (const t of [terms.join(' '), ...terms]) { i = low.indexOf(t); if (i !== -1) break; }
-  if (i === -1) i = 0;
+function termRegex(stemList) {
+  const roots = [...new Set(stemList)].map(w => w.length > 4 ? w.replace(/[ye]$/, '') : w).sort((a, b) => b.length - a.length);
+  if (!roots.length) return null;
+  return new RegExp('\\b(' + roots.map(r => r.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[a-z]*').join('|') + ')', 'gi');
+}
+
+function snippet(text, re) {
+  re.lastIndex = 0;
+  const m = re.exec(text);
+  const i = m ? m.index : 0;
   let a = Math.max(0, i - 60), b = Math.min(text.length, i + 200);
   if (a > 0) a = text.indexOf(' ', a) + 1;
   const s = esc((a > 0 ? '…' : '') + text.slice(a, b).trim() + (b < text.length ? '…' : ''));
-  const re = new RegExp('(' + terms.map(t => esc(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'gi');
   return s.replace(re, '<mark>$1</mark>');
 }
 
 function renderResults() {
-  const query = q.value;
-  const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
-  hits = search(query);
-  sel = 0;
-  if (!terms.length) {
-    meta.textContent = `Searches every section of all ${CHAPTERS.length} parts.`;
-    results.innerHTML = '';
+  const query = q.value.trim();
+  const { list, used } = search(query);
+  hits = list;
+  lastTerms = used;
+  if (only && !hits.some(h => h.s.ch === only)) only = null;
+  recentEl.hidden = !!query;
+  if (!query) {
+    meta.textContent = `Searches every section of all ${CHAPTERS.length} parts. Plurals, partial words and small typos still match.`;
+    results.innerHTML = filters.innerHTML = '';
+    shown = [];
+    renderRecent();
     return;
   }
-  meta.textContent = hits.length ? `${hits.length === 40 ? 'Top 40' : hits.length} ${hits.length === 1 ? 'passage' : 'passages'} for “${query.trim()}”` : `Nothing matches “${query.trim()}”. Try fewer or broader words.`;
-  results.innerHTML = hits.map(({ s }, i) => {
-    const crumb = [s.ch.index ? `Part ${pad(s.ch.index)}` : '', s.ch.name, s.parent && s.id !== s.ch.slug ? s.parent : ''].filter(Boolean).join(' · ');
-    return `<li><a href="#${s.id}" role="option" class="${i === 0 ? 'sel' : ''}" aria-selected="${i === 0}">
-      <div class="crumb">${esc(crumb)}</div><div class="title">${esc(s.title)}</div>
-      <div class="snip">${snippet(s.text, terms)}</div></a></li>`;
-  }).join('');
+  const re = termRegex(used);
+  const counts = new Map();
+  for (const h of hits) counts.set(h.s.ch, (counts.get(h.s.ch) || 0) + 1);
+  const parts = [...counts.keys()].sort((a, b) => a.index - b.index);
+  filters.innerHTML = parts.length > 1 ? [`<button data-part="" aria-pressed="${!only}">All ${hits.length}</button>`]
+    .concat(parts.map(ch => `<button data-part="${ch.slug}" aria-pressed="${only === ch}">${esc(ch.name)} ${counts.get(ch)}</button>`)).join('') : '';
+  shown = only ? hits.filter(h => h.s.ch === only) : hits;
+  sel = 0;
+  meta.textContent = hits.length ? `${hits.length === 60 ? 'Top 60' : hits.length} ${hits.length === 1 ? 'passage' : 'passages'} for “${query}”${only ? ` in ${only.name}` : ''}` : `Nothing matches “${query}”. Try fewer or broader words.`;
+
+  const order = [];
+  const byPart = new Map();
+  shown.forEach((h, i) => {
+    if (!byPart.has(h.s.ch)) { byPart.set(h.s.ch, []); order.push(h.s.ch); }
+    byPart.get(h.s.ch).push([h, i]);
+  });
+  results.innerHTML = order.map(ch => `<li class="group" role="presentation"><div class="group-head mono">Part ${pad(ch.index)} · ${esc(ch.name)}</div><ol role="presentation">${byPart.get(ch).map(([{ s }, i]) => `<li role="presentation"><a href="#${s.id}" role="option" data-i="${i}" class="${i === 0 ? 'sel' : ''}" aria-selected="${i === 0}">
+      ${s.parent && s.id !== s.ch.slug ? `<div class="crumb mono">${esc(s.parent)}</div>` : ''}<div class="title">${esc(s.title)}</div>
+      <div class="snip">${re ? snippet(s.text, re) : esc(s.text.slice(0, 200))}</div></a></li>`).join('')}</ol></li>`).join('');
+  results.querySelectorAll('a').forEach(a => { const on = a.dataset.i === '0'; a.classList.toggle('sel', on); a.setAttribute('aria-selected', on); });
 }
 
 function move(d) {
-  if (!hits.length) return;
-  const els = results.querySelectorAll('a');
-  els[sel].classList.remove('sel'); els[sel].setAttribute('aria-selected', 'false');
-  sel = (sel + d + hits.length) % hits.length;
-  els[sel].classList.add('sel'); els[sel].setAttribute('aria-selected', 'true');
-  els[sel].scrollIntoView({ block: 'nearest' });
+  if (!shown.length) return;
+  const at = i => results.querySelector(`[data-i="${i}"]`);
+  at(sel).classList.remove('sel'); at(sel).setAttribute('aria-selected', 'false');
+  sel = (sel + d + shown.length) % shown.length;
+  at(sel).classList.add('sel'); at(sel).setAttribute('aria-selected', 'true');
+  at(sel).scrollIntoView({ block: 'nearest' });
+}
+
+/* Recent searches live only in this browser. */
+const RECENT_KEY = 'dsb.recent';
+function readRecent() { try { return JSON.parse(localStorage.getItem(RECENT_KEY)) || []; } catch (e) { return []; } }
+function saveRecent(query) {
+  const list = [query, ...readRecent().filter(r => r.toLowerCase() !== query.toLowerCase())].slice(0, 6);
+  try { localStorage.setItem(RECENT_KEY, JSON.stringify(list)); } catch (e) {}
+}
+function renderRecent() {
+  const list = readRecent();
+  recentEl.innerHTML = list.length ? `<div class="group-head mono">Recent<button data-clear>Clear</button></div><ul>${list.map(r => `<li><button data-recent="${esc(r)}">${esc(r)}</button></li>`).join('')}</ul>` : '';
+}
+recentEl.addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if ('clear' in b.dataset) { try { localStorage.removeItem(RECENT_KEY); } catch (e) {} renderRecent(); q.focus(); return; }
+  q.value = b.dataset.recent; renderResults(); q.focus();
+});
+
+function openResult(i) {
+  const h = shown[i];
+  if (!h) return;
+  saveRecent(q.value.trim());
+  const re = termRegex(lastTerms);
+  closeSheets(false);
+  go(h.s.id, true);
+  if (re) markHits(h.s.id, re);
+}
+
+// Marks the search words inside the section that was opened, then brings the first one into view.
+function markHits(id, re) {
+  const start = document.getElementById(id);
+  const ch = bySlug[id.split('.')[0]];
+  if (!ch) return;
+  const isHead = e => /^H[234]$/.test(e.tagName);
+  const inPart = start && isHead(start);
+  const blocks = inPart ? [start] : [];
+  let el = inPart ? start.nextElementSibling : ch.el.firstElementChild;
+  while (el && !isHead(el)) { blocks.push(el); el = el.nextElementSibling; }
+  const marks = [];
+  for (const b of blocks) {
+    const walker = document.createTreeWalker(b, NodeFilter.SHOW_TEXT, { acceptNode: n => n.parentElement.closest('.num, pre') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    for (const node of nodes) {
+      re.lastIndex = 0;
+      if (!re.test(node.nodeValue)) continue;
+      const span = document.createElement('span');
+      span.innerHTML = esc(node.nodeValue).replace(re, '<mark class="hit">$1</mark>');
+      marks.push(...span.querySelectorAll('mark'));
+      node.replaceWith(...span.childNodes);
+    }
+  }
+  const first = marks.find(m => !m.closest('h2, h3, h4')) || marks[0];
+  if (first && first.getBoundingClientRect().bottom > innerHeight - 40) first.scrollIntoView({ block: 'center' });
+}
+function clearHits() {
+  document.querySelectorAll('mark.hit').forEach(m => {
+    const p = m.parentNode;
+    m.replaceWith(m.textContent);
+    p.normalize();
+  });
 }
 
 function openSearch(prefill) {
   openSheet(searchSheet);
   if (prefill !== undefined) q.value = prefill;
+  only = null;
   renderResults();
   q.focus(); q.select();
 }
 $('#open-search').addEventListener('click', () => openSearch());
-q.addEventListener('input', renderResults);
+q.addEventListener('input', () => { only = null; renderResults(); });
+filters.addEventListener('click', e => {
+  const b = e.target.closest('[data-part]');
+  if (!b) return;
+  only = b.dataset.part ? bySlug[b.dataset.part] : null;
+  renderResults();
+});
+results.addEventListener('click', e => {
+  const a = e.target.closest('a[data-i]');
+  if (!a || e.metaKey || e.ctrlKey) return;
+  e.preventDefault(); e.stopPropagation();
+  openResult(+a.dataset.i);
+});
 q.addEventListener('keydown', e => {
   if (e.key === 'ArrowDown') { e.preventDefault(); move(1); }
   else if (e.key === 'ArrowUp') { e.preventDefault(); move(-1); }
-  else if (e.key === 'Enter' && hits[sel]) { e.preventDefault(); closeSheets(false); go(hits[sel].s.id, true); }
+  else if (e.key === 'Enter' && shown[sel]) { e.preventDefault(); openResult(sel); }
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { if (!toc.hidden) closeToc(true); else closeSheets(); return; }
