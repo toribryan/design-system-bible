@@ -15,6 +15,7 @@ If you're catching up, New in 2026 is a one-page briefing on what changed from 2
 | Components | Component fundamentals and React component engineering | You're designing or building components |
 |  └ Component A–Z | 61 standard components: usage, accessibility, props, composition | You need the details of one component |
 |  └ Component Composition | How parts fit together in code and Figma, and how every component is built | You're designing a component's API or a pattern |
+|  └ Component Testing | Design checks, unit and interaction tests, accessibility, visual regression, lint rules and how to test them | You're deciding what to test, or writing tests and lint rules |
 | Design to Code | Design–code parity, building the system in Figma, documentation | You're building the Figma library or connecting it to code |
 |  └ System Architectures | How tokens, packages, Figma and docs fit together, with diagrams | You're choosing a technical setup |
 | Governance | Where governance fits, decision rights, intake, contribution, RFCs, enforcement, versioning, support policy | You're running a system with several teams |
@@ -30,8 +31,8 @@ If you're catching up, New in 2026 is a one-page briefing on what changed from 2
 | --- | --- |
 | New to design systems | Foundations 1–3 → Components 1 → skim Component A–Z → Reference 2 (books) |
 | A product designer using a system | Foundations 4–5 → Component A–Z → Component Composition 1–4 → Agentic Design Systems 6–8 |
-| A designer building the system | Foundations → Components 1 → Component Composition → Design to Code 2 → Workflows and Playbooks |
-| An engineer building the system | Components 2 → Component Composition → System Architectures → Agentic Design Systems 3–5 |
+| A designer building the system | Foundations → Components 1 → Component Composition → Component Testing 2 → Design to Code 2 → Workflows and Playbooks |
+| An engineer building the system | Components 2 → Component Composition → Component Testing → System Architectures → Agentic Design Systems 3–5 |
 | A system lead or staff designer | Governance → Decision Frameworks → Strategy and Leadership → Workflows and Playbooks |
 | Bringing in AI agents | Agentic Design Systems → Component Composition 13 → Design to Code 2 (handoff) |
 | Starting or inheriting a system | Workflows and Playbooks 10 → Worked Example → Strategy and Leadership 1–3 → Governance 2–3 |
@@ -61,6 +62,8 @@ If you're catching up, New in 2026 is a one-page briefing on what changed from 2
 | How does it all fit together? | Worked Example |
 | How do we support RTL and other languages? | Foundations 6 |
 | What colors should charts use? | Foundations 7 |
+| What should we test, and who tests it? | Component Testing 1 and 8 |
+| How do we enforce tokens with lint, and test the rules? | Component Testing 6 |
 | I just inherited a system. Where do I start? | Workflows and Playbooks 10 |
 | What should I read next? | Reference 2 |
 
@@ -79,6 +82,7 @@ Tool versions, Figma plan limits and AI workflows go out of date first, so revie
 | System Architectures | Oct 20, 2026 | Apr 20, 2027 | Token tooling, build pipeline examples |
 | Component A–Z | Oct 20, 2026 | Apr 20, 2027 | Props that track a headless library's API |
 | Component Composition | Oct 20, 2026 | Apr 20, 2027 | `render` / `asChild` conventions |
+| Component Testing | Nov 22, 2026 | Feb 22, 2027 | Storybook and Vitest APIs, lint tooling (ESLint, Oxlint, Biome) |
 | Governance | Oct 20, 2026 | Apr 20, 2027 | Rarely: process, not tools |
 | Decision Frameworks | Oct 20, 2026 | Apr 20, 2027 | AI decisions (section 9) |
 | Workflows and Playbooks | Oct 22, 2026 | Apr 20, 2027 | Tool steps inside playbooks |
@@ -89,6 +93,7 @@ Tool versions, Figma plan limits and AI workflows go out of date first, so revie
 
 | Date | Change |
 | --- | --- |
+| Nov 22, 2026 | Added the Component Testing tab: design and engineering testing, accessibility, visual regression, lint rules and lint testing |
 | Oct 22, 2026 | Edited the prose in every tab for clarity; fixed two section references in Governance |
 | Oct 22, 2026 | Added the Worked Example tab (Combobox, request to adoption) |
 | Oct 22, 2026 | Foundations: added Brand expression (section 3), Internationalization and localization (section 6), Data visualization (section 7) |
@@ -321,7 +326,7 @@ The build follows the new-component playbook (Workflows and Playbooks section 2)
 | Step | What happened | Where it's explained |
 | --- | --- | --- |
 | Build | Engineer builds on the headless primitive, styles with tokens only, ships it in the `labs` tier first | Components section 2 |
-| Test | Unit tests for filtering and selection; interaction tests for keyboard; axe in CI; visual regression in light, dark and RTL; pseudo-localized story | Components section 2, Foundations section 6 |
+| Test | Unit tests for filtering and selection; interaction tests for keyboard; axe in CI; visual regression in light, dark and RTL; pseudo-localized story | Component Testing sections 3–5, Foundations section 6 |
 | Accessibility review | Screen reader pass in VoiceOver and NVDA finds that the result count isn't announced. Fixed with a polite live region ("12 results") | Workflows and Playbooks section 9 |
 | Parity review | Designer and engineer compare the Figma component and the coded one state by state; two spacing mismatches fixed in Figma | Design to Code section 1 |
 | Docs | Page covers when to use it (and when Select is better), anatomy, props, keyboard, accessibility notes, content guidelines and three live examples | Design to Code section 3 |
@@ -657,7 +662,7 @@ Charts need their own color, type and interaction rules: the UI palette was buil
 
 # Components
 
-How to design and build components: the contract every component makes, and how to engineer a React component library in 2026. Two tabs nest under this one: Component A–Z, a field guide to 61 standard components with props, and Component Composition, which covers how parts fit together in code and Figma.
+How to design and build components: the contract every component makes, and how to engineer a React component library in 2026. Three tabs nest under this one: Component A–Z, a field guide to 61 standard components with props; Component Composition, which covers how parts fit together in code and Figma; and Component Testing, which covers how to test components in design and code, including lint.
 
 ## 1. Component fundamentals
 
@@ -807,6 +812,8 @@ export function Button({ className, variant, size, ref, ...props }: ButtonProps)
 - **Visual regression:** Chromatic (cloud, TurboSnap tests only changed stories) or Playwright `toHaveScreenshot()` (self-hosted).
 - **Unit tests:** Testing Library, querying `getByRole` first and `getByTestId` last; add `jest-axe` / `vitest-axe`.
 - **Figma Code Connect:** maps Figma components and props to real code in Dev Mode and feeds Figma's MCP server for agents. ([docs](https://developers.figma.com/docs/code-connect/))
+
+Component Testing covers what to test at each layer, who owns it, and how to write and test lint rules.
 
 ### Packaging and release
 
@@ -3615,6 +3622,424 @@ When you plan a new component, find its row neighbors in the map first. If it ne
 
 ---
 
+# Component Testing
+
+A component is a contract, and tests are how you keep it. This tab covers what to test and who tests it: design checks that happen before any code exists, engineering tests that guard behavior and accessibility, visual regression, and lint rules that catch mistakes in the editor before a test ever runs. Tool names are current as of November 2026; the layers and the rules carry over to whatever replaces them.
+
+## 1. The testing layers
+
+*[Diagram: testing layers · from lint in the editor to sign-off before release]*
+
+No single kind of test covers a component. Each layer catches a different class of bug at a different cost, and the cheap layers should catch as much as they can so the expensive ones stay small.
+
+| Layer | What it catches | Typical tools | Runs | Owned by |
+| --- | --- | --- | --- | --- |
+| **Design checks** | Missing states, unbound values, contrast, broken resizing, props that don't match code | Figma variables, Check designs, lint plugins, a stress-test page | While designing, before handoff | Designer |
+| **Static analysis** | Type errors, raw values, banned imports, misuse of the API, missing labels | TypeScript, ESLint, Stylelint, token schema validation | On save, pre-commit, every PR | Engineer, with rules owned by the system team |
+| **Unit and interaction** | Broken behavior: props, events, keyboard, controlled and uncontrolled state | Vitest, Testing Library, Storybook `play` functions | Every PR | Engineer |
+| **Automated accessibility** | Missing names, invalid ARIA, contrast in rendered output | axe-core in unit tests and Storybook | Every PR | Engineer |
+| **Visual regression** | Unintended visual change in any story, theme or direction | Chromatic, Playwright screenshots | Every PR | Engineer runs it, designer approves visual changes |
+| **Manual accessibility** | What automation can't judge: announcements, focus order, reading order, usability with assistive tech | VoiceOver, NVDA, keyboard, zoom | New or changed interactive components | Accessibility owner |
+| **Parity review** | Drift between the Figma component and the coded one | Side-by-side review in Storybook and Figma | Before a component leaves `labs` | Designer and engineer together |
+| **Consumer checks** | Breakage in real products: CSS conflicts, bundler issues, API assumptions | Canary releases, smoke tests in the largest consuming apps | Before each release | System team, with consuming teams |
+
+Two rules keep the stack healthy. First, push every check as far left as it will go: a lint rule that blocks a raw hex value is cheaper than a visual diff that shows the wrong gray. Second, never let automation stand in for judgment. Automated accessibility checks find a minority of real issues, and a passing visual diff only means nothing changed, not that it was right to begin with.
+
+## 2. Design considerations
+
+Design testing starts before handoff. A component that ships with a missing state or a resizing bug was usually broken in Figma first.
+
+### Test the spec, not just the screen
+
+Run every component through the states matrix (Components 1) and check each cell exists, in every mode the system supports:
+
+- **States:** every row of the matrix, including the ones that are easy to skip: focus-visible, loading, read-only, invalid, and disabled with a reason.
+- **Modes:** light, dark, high contrast if you support it, each density, each brand.
+- **Direction:** an RTL version of anything with icons, chevrons or asymmetric padding.
+- **Content extremes:** a one-character label, a 60-character label, a label in German, no items, one item, a thousand items, a missing image, a name with no avatar.
+- **Size and zoom:** the smallest container the component claims to support, and how it reflows at 320px wide.
+
+### Stress-test the Figma component
+
+Keep a stress-test page for each component in the library file. It holds instances with extreme content, every variant in every mode, and nested use inside its most common parents. Before publishing a change:
+
+1. **Unbound values:** every fill, stroke, radius, spacing and type value is bound to a variable or style. Check designs or a lint plugin finds the rest.
+2. **Resizing:** stretch each instance and swap in long content. Auto layout should grow, wrap or truncate as the spec says, never clip or overlap.
+3. **Contrast:** check text and non-text contrast in every mode, including focus rings against every surface they can sit on.
+4. **Hit targets:** interactive parts are at least 24 by 24px, with spacing that meets WCAG 2.5.8.
+5. **Property parity:** component property names and values match the code props (`variant`, `size`, `disabled`), so Code Connect maps cleanly and designers and engineers say the same words.
+6. **Instance swaps and overrides:** slots accept the instances they should and reject the ones they shouldn't (preferred values set), and common overrides survive a library update.
+
+### Usability-test the hard ones
+
+Most components don't need their own usability study. The ones that do are new interaction patterns and the components people misuse most: combobox, date picker, data table, multi-select, anything with drag and drop. Test them inside a realistic task ("find and assign the reviewer for this request"), not in isolation, using a prototype built from the real system so the behavior matches what ships. Watch for:
+
+- Whether people recognize what the control is and what it will do before they use it.
+- Where they look for an action that the component hides (an overflow menu, a hover-only button).
+- Errors and recovery: what happens after a wrong selection, and whether they can undo it.
+- Keyboard and screen reader users, as participants and not only as a later audit.
+
+### Review what was built
+
+The parity review (Design to Code 1) is the designer's test of the coded component. Walk the states matrix in Storybook, side by side with the Figma component, in every theme and in RTL. Log each mismatch as a bug against whichever side is wrong; sometimes the code is right and Figma is out of date.
+
+### Design's definition of done
+
+| Check | Done when |
+| --- | --- |
+| States | Every cell in the states matrix exists, in every mode |
+| Tokens | No unbound values in the component or its stress-test page |
+| Content | Extremes, pseudo-localized and RTL examples on the stress-test page |
+| Accessibility | Contrast passes in every mode; focus states drawn; hit targets meet 2.5.8; keyboard and announcement notes written for engineering |
+| API | Figma properties match the agreed code props |
+| Review | Parity review signed off, mismatches fixed or logged |
+
+## 3. Engineering considerations
+
+### Test the contract, not the implementation
+
+A component test should fail when a consumer would notice a change, and pass through any refactor a consumer wouldn't notice. Test the public contract:
+
+- **Rendering:** the right role, name and state for each prop combination.
+- **Behavior:** events fire with the documented arguments; keyboard interaction matches the APG pattern.
+- **State:** controlled (`value` + `onChange`) and uncontrolled (`defaultValue`) both work, and a controlled component never changes its own value.
+- **Pass-through:** refs forward to the documented element; `aria-*`, `data-*` and native attributes reach the DOM; `className` merges instead of replacing.
+- **Edge cases:** empty, loading, error, very long content, rapid repeated input.
+- **Server rendering:** the component renders without `window`, and hydrates without a mismatch.
+
+Don't test:
+
+- **Styles through snapshots.** A DOM snapshot of class names fails on every refactor and catches nothing a visual test wouldn't catch better.
+- **Internals.** No assertions on internal state, private hooks or the number of renders.
+- **The headless library.** If the system builds on Base UI or React Aria, test your wiring and your additions, not their focus management.
+
+### Query the way people use it
+
+Testing Library's query order follows how people find things on a page. Use `getByRole` with a name first, then `getByLabelText`, then `getByText`. Reach for `getByTestId` only when nothing a user could perceive identifies the element. A test that can't find a button by its role and name has found an accessibility bug.
+
+Use `user-event`, not `fireEvent`, so tests type, tab and click the way a person does, with the full sequence of events in between.
+
+```tsx
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { axe } from 'vitest-axe';
+import { Switch } from './switch';
+
+test('turns on with Space and reports its state', async () => {
+  const user = userEvent.setup();
+  const onCheckedChange = vi.fn();
+  render(<Switch label="Email notifications" onCheckedChange={onCheckedChange} />);
+
+  const toggle = screen.getByRole('switch', { name: 'Email notifications' });
+  expect(toggle).not.toBeChecked();
+
+  await user.tab();
+  expect(toggle).toHaveFocus();
+  await user.keyboard(' ');
+
+  expect(toggle).toBeChecked();
+  expect(onCheckedChange).toHaveBeenCalledTimes(1);
+});
+
+test('has no axe violations when disabled', async () => {
+  const { container } = render(<Switch label="Email notifications" disabled />);
+  expect(await axe(container)).toHaveNoViolations();
+});
+```
+
+### Stories as tests
+
+Every story is already a test case: it renders a known state. Storybook's Vitest addon runs each story in a real browser, and `play` functions add interactions and assertions to it. Write a story for each meaningful state, then add `play` to the ones with behavior.
+
+```tsx
+import { expect, within } from 'storybook/test';
+
+export const FiltersAsYouType: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const input = canvas.getByRole('combobox', { name: 'Country' });
+    await userEvent.type(input, 'por');
+
+    const page = within(canvasElement.ownerDocument.body);
+    await expect(page.getByRole('option', { name: 'Portugal' })).toBeVisible();
+    await expect(page.queryByRole('option', { name: 'Spain' })).toBeNull();
+
+    await userEvent.keyboard('{ArrowDown}{Enter}');
+    await expect(input).toHaveValue('Portugal');
+  },
+};
+```
+
+Popups, menus and tooltips usually render in a portal outside the story's root, so query the document body for them, as above. Querying only `canvas` is the most common reason an overlay test can't find an element that's plainly on screen.
+
+### What to test by component type
+
+| Type | Examples | Must cover |
+| --- | --- | --- |
+| **Leaf** | Button, Badge, Link, Icon | Role and name; each variant renders; disabled and loading behavior; `render` / `asChild` keeps behavior; ref forwarding |
+| **Form control** | Input, Checkbox, Switch, Select | Label association; controlled and uncontrolled; `name` and `value` submit with a form; invalid state sets `aria-invalid` and links the error; required |
+| **Overlay** | Dialog, Popover, Tooltip, Menu | Opens from the trigger by pointer and keyboard; focus moves in and returns to the trigger; Escape and outside click dismiss; scroll lock; nested overlays close in order |
+| **Collection** | Tabs, Listbox, Tree view, Data table | Roving focus or `aria-activedescendant`; arrow keys, Home and End; typeahead; selection modes; disabled items are skipped; large lists stay usable |
+| **Composite** | Combobox, Date picker, Command palette | Every part's keyboard contract together; async loading and empty states; the input and the popup stay in sync; announcements for result counts |
+
+### Compound components
+
+Compound components (Component Composition 3) can be assembled wrong. Test the supported assemblies, and make the unsupported ones fail loudly: a part rendered outside its root should throw a clear development error ("`Tabs.Tab` must be inside `Tabs.Root`"), and a test should prove it does. Test the convenience wrapper and the composed version against the same expectations, so they can't drift.
+
+### Keep tests fast and deterministic
+
+Flaky tests teach people to ignore failures. Most flakiness in component tests comes from the same handful of sources:
+
+- **Animation and transitions:** disable them in the test environment, or wait for the end state with `findBy*` instead of fixed timeouts.
+- **Time:** fake timers for debounce and delays; a fixed date for calendars and relative times.
+- **Fonts and layout:** for anything that measures text, use a real browser (Vitest browser mode, Storybook, Playwright), not jsdom, which has no layout.
+- **Shared state:** reset portals, scroll locks and global listeners between tests.
+- **Network:** mock async sources at the network layer (MSW) so stories and tests share the same fixtures.
+
+## 4. Accessibility testing
+
+Accessibility testing runs at three depths, and a component needs all three before it's stable.
+
+| Depth | What it covers | How |
+| --- | --- | --- |
+| **Automated** | Missing names, invalid roles and attributes, duplicate IDs, contrast in rendered output | axe in unit tests and in every Storybook story; set the a11y addon to fail CI (`parameters.a11y.test = 'error'`) |
+| **Scripted** | Keyboard contract, focus order and focus return, `aria-expanded` and other state changes | Interaction tests and `play` functions that drive the component only with the keyboard |
+| **Manual** | What a person hears and experiences: announcement wording, live regions, reading order, zoom, forced colors | The accessibility review in Workflows and Playbooks 9 |
+
+Things worth automating that teams often leave to manual review:
+
+- **Keyboard-only paths.** Write at least one interaction test per component that never uses the pointer.
+- **Forced colors and reduced motion.** Playwright can emulate both (`page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' })`); snapshot the forced-colors version of anything with custom focus rings or borders drawn as backgrounds.
+- **Zoom and reflow.** Snapshot stories at a 320px viewport to catch content that's cut off or scrolls in two directions.
+- **Target size.** A small custom check that measures interactive elements in each story against 24 by 24px.
+
+What only people can judge: whether the announcement makes sense ("12 results" vs. "list, 12 items"), whether the focus order matches the visual order in a real layout, and whether the component is usable, not just valid. Keep the manual screen reader matrix small and fixed (VoiceOver with Safari, NVDA with Chrome or Firefox, plus TalkBack or iOS VoiceOver for mobile components) so it actually gets run.
+
+## 5. Visual regression testing
+
+Visual regression compares screenshots of each story against an approved baseline and flags what changed. It's the only layer that sees what users see, and the one most likely to drown a team in noise.
+
+### What to capture
+
+- Every story, in every theme, in LTR and RTL. Add density and brand only where they change layout.
+- Interaction states that matter visually: hover, focus-visible, open. Set them from a `play` function or with pseudo-state parameters, not by hand.
+- One or two viewport widths for components that respond to their container.
+- A pseudo-localized story per component (Foundations 6).
+
+Multiply stories by modes before turning everything on. Two themes, two directions and two widths turn 400 stories into 3,200 snapshots per run. Snapshot only changed stories on pull requests (Chromatic's TurboSnap does this from the dependency graph) and run the full set on `main`.
+
+### Make snapshots stable
+
+- Run in one browser version and one OS image; self-hosted Playwright suites should use the official Docker image so local and CI renders match.
+- Load fonts before capture and wait for them (`document.fonts.ready`).
+- Disable animations and carets; freeze time; use fixed images and data.
+- Avoid pixel thresholds as a fix for flakiness. A threshold loose enough to hide anti-aliasing noise also hides a 1px border change.
+
+### Reviewing diffs
+
+A visual diff is a question, not an answer: "this changed, was it meant to?" Treat the review like code review.
+
+- **Intended changes** are approved by a designer when they change how a component looks, and by an engineer otherwise.
+- **Unintended changes** block the pull request.
+- **Token changes** touch many components at once. Review them as a batch, against the token diff, with the designer who proposed the change.
+
+## 6. Lint testing
+
+Lint rules are the cheapest tests a system has. They run in the editor as people type, they explain themselves in the error message, and many fix themselves. Most of the rules a system cares about (tokens only, system components only, no deprecated APIs) are enforced by lint long before any test runs (Governance 9).
+
+### Two kinds of lint
+
+A design system needs lint in two places, with different rules and different audiences.
+
+| | Lint inside the system | Lint the system ships |
+| --- | --- | --- |
+| **Who it's for** | The system team and contributors | Every product team using the system |
+| **What it enforces** | How components are built: tokens only, accessible markup, no cross-component imports, docs present | How components are used: system components over look-alikes, no deprecated props, no raw values in product code |
+| **Where it lives** | The system repo's config | A published package (`@acme/eslint-plugin`, `@acme/stylelint-config`) with a `recommended` config |
+| **Severity** | Errors from day one | Starts at warn; moves up the severity ladder as adoption grows |
+
+### The lint stack
+
+| Layer | Catches | Tools |
+| --- | --- | --- |
+| **Types** | Wrong props, missing required props, invalid variant values, deprecated APIs (`@deprecated` shows as a strikethrough in editors) | TypeScript in strict mode |
+| **Code** | Hooks misuse, missing labels and invalid ARIA in JSX, banned imports, raw values in `className` and `style`, system-specific misuse | ESLint with `jsx-a11y`, `react-hooks` and custom rules; Oxlint or Biome where speed matters |
+| **Styles** | Hex, rgb and named colors; spacing and radii off the scale; `!important`; z-index outside the layer tokens | Stylelint with `color-no-hex`, `function-disallowed-list` and `declaration-strict-value` |
+| **Tokens** | Malformed token files, broken aliases, a semantic token pointing at another semantic token where the tiers don't allow it, missing modes | DTCG schema validation plus custom checks in the token build |
+| **Docs and copy** | Missing sections on a component page, broken links, off-voice words in examples | Markdown lint, a docs page check, Vale for voice and terminology |
+| **Design files** | Unbound values, detached instances, layers that should use a library style | Check designs, Figma lint plugins, library analytics |
+
+### Rules worth writing
+
+| Rule | Catches | Default severity | Autofix |
+| --- | --- | --- | --- |
+| `no-raw-color` | Hex, rgb, hsl and oklch values in JSX classes and styles | Error inside the system; warn for consumers | No; the message names the closest token |
+| `no-restricted-imports` | Imports from internal paths, or third-party libraries the system replaces | Error | No |
+| `prefer-system-component` | `<button>`, `<select>` and look-alike libraries where a system component exists | Warn | Sometimes, for one-to-one swaps |
+| `no-deprecated-props` | Props past their deprecation notice | Warn during the window, error after | Yes, when the codemod is a rename |
+| `require-accessible-name` | Icon buttons, inputs and dialogs with no label | Error | No |
+| `no-spacing-off-scale` | Arbitrary spacing values (`p-[13px]`, `margin: 13px`) | Warn | Yes, to the nearest step when it's unambiguous |
+
+Restricting imports needs no custom code:
+
+```js
+// eslint.config.js
+export default [
+  {
+    rules: {
+      'no-restricted-imports': ['error', {
+        paths: [{ name: 'react-select', message: 'Use Combobox from @acme/ui.' }],
+        patterns: [{ group: ['@acme/ui/*/internal', '@acme/ui/dist/*'], message: 'Import from @acme/ui entry points.' }],
+      }],
+    },
+  },
+];
+```
+
+Styles need a few core rules and one plugin:
+
+```json
+{
+  "plugins": ["stylelint-declaration-strict-value"],
+  "ignoreFiles": ["tokens/**"],
+  "rules": {
+    "color-no-hex": true,
+    "color-named": "never",
+    "function-disallowed-list": ["rgb", "rgba", "hsl", "hsla", "oklch"],
+    "scale-unlimited/declaration-strict-value": [
+      ["/color$/", "fill", "stroke", "z-index"],
+      { "ignoreValues": ["transparent", "inherit", "currentColor", "none"] }
+    ]
+  }
+}
+```
+
+The token files are ignored because they're the one place raw values belong.
+
+### Writing a custom rule
+
+A custom ESLint rule is a short function over the syntax tree. Keep each rule to one job, and write the message so it tells people what to use instead.
+
+```js
+// packages/eslint-plugin/rules/no-raw-color.js
+const RAW = /#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?|oklch)\(/i;
+
+export default {
+  meta: {
+    type: 'problem',
+    docs: { description: 'Use color tokens instead of raw color values' },
+    messages: { raw: 'Raw color "{{value}}". Use a semantic color token, like text-fg-muted.' },
+    schema: [],
+  },
+  create(context) {
+    const check = (node) => {
+      const match = typeof node.value === 'string' && node.value.match(RAW);
+      if (match) context.report({ node, messageId: 'raw', data: { value: match[0] } });
+    };
+    return {
+      'JSXAttribute[name.name="className"] Literal': check,
+      'JSXAttribute[name.name="style"] Property > Literal': check,
+    };
+  },
+};
+```
+
+### Testing the lint rules
+
+Lint rules are code, and a rule with no tests either misses what it's meant to catch or flags code it shouldn't. Every custom rule gets a test file with valid and invalid cases. Collect the invalid cases from real code the rule was written to stop, and the valid cases from the near misses that shouldn't be flagged.
+
+```js
+// packages/eslint-plugin/rules/no-raw-color.test.js
+import { RuleTester } from 'eslint';
+import rule from './no-raw-color.js';
+
+new RuleTester({
+  languageOptions: { parserOptions: { ecmaFeatures: { jsx: true } } },
+}).run('no-raw-color', rule, {
+  valid: [
+    '<p className="text-fg-muted" />',
+    '<div style={{ color: "var(--color-fg-muted)" }} />',
+    '<a href="#top" className="link" />',
+  ],
+  invalid: [
+    { code: '<p className="text-[#6b7280]" />', errors: [{ messageId: 'raw' }] },
+    { code: '<div style={{ color: "rgb(0 0 0)" }} />', errors: [{ messageId: 'raw' }] },
+  ],
+});
+```
+
+`RuleTester` uses the test runner's `describe` and `it`, so run it under Vitest with `globals: true` or assign them to `RuleTester` first. Stylelint configs are tested the same way: run the config against fixture files that should pass and fail, and assert on the warnings. When a rule ships an autofix, add an `output` to each invalid case so the fix itself is tested.
+
+Also test the shipped configs as a whole. A fixture project that installs `@acme/eslint-plugin` and lints a known file catches broken exports, peer dependency problems and rules that crash on syntax the unit tests didn't cover.
+
+### Rolling out a new rule
+
+1. **Measure first.** Run the rule across the main consuming repos and count violations before anyone sees it.
+2. **Ship at warn**, with a message that names the fix and links to the docs.
+3. **Suppress the existing violations** (ESLint bulk suppressions, or a baseline file) so the rule blocks new violations without forcing a cleanup of old ones on day one. Track the suppression count on the health dashboard.
+4. **Provide a codemod** when the fix is mechanical.
+5. **Promote to error** once most teams comply (Governance 9). Never promote a rule that a large share of code still breaks; people will turn it off.
+
+Agents follow lint too. Coding agents that run the linter after each change fix most violations without being told, so a good rule set is also some of the most effective agent guidance a system has (Agentic Design Systems 4).
+
+## 7. Testing in CI and release
+
+| When | What runs | Blocks |
+| --- | --- | --- |
+| **On save** | TypeScript and lint in the editor | Nothing; fast feedback |
+| **Pre-commit** | Lint and format on staged files only | The commit, for errors |
+| **Pull request** | Types, lint, unit and interaction tests, axe on every story, visual regression on changed stories, bundle size per entry | Merge, for any failure or unapproved visual change |
+| **Main** | Full visual regression, full test suite, docs build | The release |
+| **Release candidate** | Canary build installed in the largest consuming apps; their smoke tests and visual tests run against it | Publishing |
+| **Nightly or weekly** | Cross-browser runs (Chromium, Firefox, WebKit), full accessibility scan of the docs site, consumer lint report | Nothing; results go to the health dashboard |
+
+Keep the pull request checks under about ten minutes. When they grow past that, run only what the change touches (affected packages, changed stories) and move the rest to `main`.
+
+Consumer testing finds what the system's own tests can't: CSS order conflicts, bundler differences, and products that relied on behavior nobody documented. Test a release candidate in at least the two or three products with the most usage before publishing a minor, and in every product that opted in before a major.
+
+## 8. Who tests what
+
+| Activity | Designer | Engineer | Accessibility owner | System lead | Product teams |
+| --- | --- | --- | --- | --- | --- |
+| States matrix and stress-test page | Owns | Reviews | Reviews | | |
+| Figma lint and property parity | Owns | Reviews | | | |
+| Usability testing of complex components | Owns | Joins | Joins | Approves the study | Recruit participants |
+| Unit, interaction and story tests | | Owns | Reviews | | |
+| Lint rules and their tests | Suggests rules | Owns | Suggests rules | Approves severity changes | Report false positives |
+| Visual diff approval | Approves visual changes | Approves the rest | | | |
+| Manual accessibility review | | Fixes | Owns | | |
+| Parity review | Owns | Owns | | | |
+| Canary and consumer checks | | Runs | | Owns | Run their suites |
+
+## 9. Checklists
+
+### Before a component merges
+
+- [ ] Every state in the states matrix has a story, in every theme and in RTL
+- [ ] Interaction tests cover the keyboard contract with no pointer events
+- [ ] Controlled and uncontrolled use, ref forwarding and attribute pass-through are tested
+- [ ] axe passes for every story; the a11y addon fails CI on violations
+- [ ] Visual diffs are reviewed and intended changes approved
+- [ ] Lint passes with no new suppressions
+- [ ] No test depends on a timeout, the current date or animation timing
+
+### Before a component leaves `labs`
+
+- [ ] Design's definition of done (section 2) is met
+- [ ] Manual accessibility review signed off (Workflows and Playbooks 9)
+- [ ] Parity review complete, with mismatches fixed or logged
+- [ ] Pseudo-localized story and real-language spot checks done (Foundations 6)
+- [ ] Usability tested, if it's a new interaction pattern or a complex composite
+
+### Before a new lint rule ships
+
+- [ ] Valid and invalid test cases from real code, plus an `output` for any autofix
+- [ ] Violation count measured across consuming repos
+- [ ] Message names the fix and links to the docs
+- [ ] Severity set, with a date or adoption threshold for promotion
+- [ ] Codemod available if the fix is mechanical
+
+---
+
 # Design to Code
 
 How design and code stay one system: a single source of truth for each decision, a Figma library built the way code is built, and documentation that serves both people and agents. System Architectures nests under this tab and shows how tokens, packages, Figma and docs fit together.
@@ -4305,7 +4730,7 @@ Guidelines that people must remember are suggestions; checks that run automatica
 2. **Warn:** shown in CI, counted on the health dashboard.
 3. **Error:** blocks merge. Reserve it for accessibility failures, deprecated APIs past their window, and banned imports.
 
-Move a rule up the ladder only after most teams already comply. Otherwise you train people to disable the linter.
+Move a rule up the ladder only after most teams already comply. Otherwise you train people to disable the linter. Component Testing 6 covers writing, testing and rolling out lint rules.
 
 ## 10. Versioning, releases and deprecation
 
