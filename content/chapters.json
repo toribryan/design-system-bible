@@ -1,0 +1,67 @@
+[
+  {
+    "slug": "start",
+    "name": "Start here"
+  },
+  {
+    "slug": "new-in-2026",
+    "name": "New in 2026"
+  },
+  {
+    "slug": "worked-example",
+    "name": "Worked Example"
+  },
+  {
+    "slug": "foundations",
+    "name": "Foundations"
+  },
+  {
+    "slug": "components",
+    "name": "Components"
+  },
+  {
+    "slug": "component-a-z",
+    "name": "Component A–Z",
+    "parent": "Components"
+  },
+  {
+    "slug": "composition",
+    "name": "Component Composition",
+    "parent": "Components"
+  },
+  {
+    "slug": "design-to-code",
+    "name": "Design to Code"
+  },
+  {
+    "slug": "architectures",
+    "name": "System Architectures",
+    "parent": "Design to Code"
+  },
+  {
+    "slug": "governance",
+    "name": "Governance"
+  },
+  {
+    "slug": "decisions",
+    "name": "Decision Frameworks",
+    "parent": "Governance"
+  },
+  {
+    "slug": "playbooks",
+    "name": "Workflows and Playbooks",
+    "parent": "Governance"
+  },
+  {
+    "slug": "strategy",
+    "name": "Strategy and Leadership"
+  },
+  {
+    "slug": "agentic",
+    "name": "Agentic Design Systems"
+  },
+  {
+    "slug": "reference",
+    "name": "Reference"
+  }
+]
