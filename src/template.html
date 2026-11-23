@@ -11,25 +11,24 @@
 <meta property="og:description" content="A practical reference for building, running and scaling design systems. Searchable, cross-linked, with a graph of how it all connects.">
 <meta property="og:url" content="https://designsystembible.com/">
 <meta name="twitter:card" content="summary">
-<meta name="theme-color" content="#F2EEE3" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#17170F" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F4F3EF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@500..700&family=Instrument+Sans:ital,wght@0,400..600;1,400..500&family=DM+Mono:wght@400;500&family=Silkscreen&display=swap">
 <style>
-/* Soft System: bone paper, ink and moss, signal green only as pixels. Nothing is rounded. */
+/* Off-black ink on off-white paper, no color. Highlights invert. Nothing is rounded. */
 :root {
-  --paper: #F2EEE3;
-  --paper-2: #E9E3D3;
-  --ink: #17170F;
-  --ink-2: #2E3722;
-  --ink-3: #5E6B48;
-  --rule: #D6C0A0;
-  --accent: #5E6B48;
-  --hit: #D9A398;
-  --hit-ink: #17170F;
-  --signal: #A9F50D;
+  --paper: #F4F3EF;
+  --paper-2: #EAE9E4;
+  --ink: #141414;
+  --ink-2: #3A3A38;
+  --ink-3: #6B6A66;
+  --rule: #D9D8D2;
+  --accent: #141414;
+  --hit: #141414;
+  --hit-ink: #F4F3EF;
   --display: "Syne", "Helvetica Neue", Arial, sans-serif;
   --sans: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
   --mono: "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -38,9 +37,9 @@
   --head: 56px;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --paper: #17170F; --paper-2: #20231A; --ink: #F2EEE3; --ink-2: #E9E3D3; --ink-3: #9AA97C; --rule: #2E3722; --accent: #A9F50D; --hit: #5E6B48; --hit-ink: #F2EEE3; color-scheme: dark; }
+  :root:not([data-theme="light"]) { --paper: #121212; --paper-2: #1C1C1B; --ink: #EDECE8; --ink-2: #C8C7C2; --ink-3: #8E8D88; --rule: #2C2C2A; --accent: #EDECE8; --hit: #EDECE8; --hit-ink: #121212; color-scheme: dark; }
 }
-:root[data-theme="dark"] { --paper: #17170F; --paper-2: #20231A; --ink: #F2EEE3; --ink-2: #E9E3D3; --ink-3: #9AA97C; --rule: #2E3722; --accent: #A9F50D; --hit: #5E6B48; --hit-ink: #F2EEE3; color-scheme: dark; }
+:root[data-theme="dark"] { --paper: #121212; --paper-2: #1C1C1B; --ink: #EDECE8; --ink-2: #C8C7C2; --ink-3: #8E8D88; --rule: #2C2C2A; --accent: #EDECE8; --hit: #EDECE8; --hit-ink: #121212; color-scheme: dark; }
 
 * { box-sizing: border-box; border-radius: 0; }
 html { color-scheme: light; }
@@ -49,7 +48,7 @@ img { max-width: 100%; }
 body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 18px; line-height: 1.65; -webkit-font-smoothing: antialiased; }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--paper); }
 ::selection { background: var(--hit); color: var(--hit-ink); }
-a { color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; text-decoration-color: var(--accent); }
+a { color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; text-decoration-color: var(--ink-3); }
 a:hover { text-decoration-thickness: 2px; }
 :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
@@ -84,8 +83,7 @@ main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: m
 /* Title page */
 .titlepage { padding: 72px 0 72px; }
 .titlepage .hero { display: flex; align-items: flex-end; gap: 20px; }
-.titlepage .hero .mark { color: var(--signal); }
-.titlepage .hero .mark.clean { color: var(--ink); }
+.titlepage .hero .mark { color: var(--ink); }
 .titlepage .eyebrow { color: var(--ink-3); margin-top: 40px; }
 .titlepage h1 { font-family: var(--display); font-weight: 700; font-size: clamp(48px, 10vw, 104px); line-height: 0.94; letter-spacing: -0.04em; margin: 14px 0 24px; text-wrap: balance; }
 .titlepage .by { margin: 0 0 56px; color: var(--ink-2); }
