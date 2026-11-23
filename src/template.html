@@ -17,6 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@500..700&family=Instrument+Sans:ital,wght@0,400..600;1,400..500&family=DM+Mono:wght@400;500&family=Silkscreen&display=swap">
+<script>try { const t = localStorage.getItem('dsb.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <style>
 /* Off-black ink on off-white paper, no color. Highlights invert. Nothing is rounded. */
 :root {
@@ -151,6 +152,15 @@ article h3 { font-size: 21px; font-weight: 600; line-height: 1.3; letter-spacing
 article h4 { font-family: var(--mono); font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-2); margin: 32px 0 6px; }
 article .num { display: block; font-family: var(--mono); font-size: 12.5px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); margin-bottom: 12px; }
 article h3 .num { display: inline; margin: 0 0.5em 0 0; font-size: 15px; letter-spacing: 0; }
+article h2, article h3 { position: relative; }
+.hx { display: inline-flex; gap: 2px; margin-left: 10px; vertical-align: 0.2em; opacity: 0; transition: opacity 0.15s ease-out; }
+article h2:hover .hx, article h3:hover .hx, .hx:focus-within { opacity: 1; }
+.hx button, .copy-code { padding: 2px 6px; font-size: 11px; color: var(--ink-3); border: 1px solid var(--rule); background: var(--paper); }
+.hx button:hover, .copy-code:hover { color: var(--ink); border-color: var(--ink); }
+@media (hover: none) { .hx { opacity: 0.6; } }
+pre { position: relative; }
+.copy-code { position: absolute; top: 8px; right: 8px; opacity: 0; }
+pre:hover .copy-code, .copy-code:focus-visible { opacity: 1; }
 article h2.letter { font-family: var(--pixel); font-weight: 400; font-size: 56px; letter-spacing: 0; margin: 96px 0 8px; padding-bottom: 8px; border-bottom: 1px solid var(--ink); }
 article h2.letter + h3 { margin-top: 20px; }
 article p, article ul, article ol { margin: 0 0 18px; }
@@ -212,34 +222,54 @@ figure.diagram span { color: var(--ink-2); }
 .contents ol a:hover { text-decoration: underline; color: var(--ink); }
 .contents ol.letters { columns: auto; display: flex; flex-wrap: wrap; gap: 4px 14px; font-family: var(--pixel); font-size: 18px; }
 
-.search-field { display: flex; align-items: baseline; gap: 14px; border-bottom: 2px solid var(--ink); padding-bottom: 10px; margin-top: 24px; }
-.search-field label { color: var(--ink-3); }
-.search-field input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font: 600 30px/1.2 var(--display); letter-spacing: -0.01em; color: var(--ink); padding: 0; }
-.search-field input::placeholder { color: var(--ink-3); opacity: 0.6; font-weight: 500; }
-.search-field input::-webkit-search-cancel-button { display: none; }
-.meta { font-family: var(--mono); font-size: 12.5px; color: var(--ink-3); margin: 14px 0 28px; }
+
+/* Command menu: search, jump and run commands from one dialog */
+.sheet.cmdk-wrap { padding: 0; overflow: hidden; background: color-mix(in srgb, var(--paper) 55%, transparent); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+.cmdk { position: fixed; top: 12vh; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; width: calc(100vw - 32px); max-width: 780px; height: min(32rem, 74vh); padding: 4px; background: var(--paper-2); border: 1px solid var(--ink); box-shadow: 0 28px 64px -20px rgb(0 0 0 / 0.35); animation: cmdk-in 0.16s cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes cmdk-in { from { opacity: 0; transform: translateX(-50%) scale(0.98); } }
+.cmdk-search { flex: none; display: flex; align-items: center; gap: 10px; height: 50px; padding: 0 12px; }
+.cmdk-search .ico { font-family: var(--mono); color: var(--ink-3); }
+.cmdk-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; padding: 0; font: 500 17px/1.2 var(--sans); color: var(--ink); }
+.cmdk-search input::placeholder { color: var(--ink-3); }
+.cmdk-search input::-webkit-search-cancel-button { display: none; }
+.cmdk-back { padding: 2px 6px; color: var(--ink-3); }
+.cmdk-back:hover { color: var(--ink); }
+.cmdk-crumb { flex: none; padding: 3px 8px; font-size: 11px; background: var(--paper); border: 1px solid var(--rule); }
+.cmdk-body { flex: 1; min-height: 0; display: flex; background: var(--paper); border: 1px solid var(--rule); }
+.cmdk-list { flex: 1; min-width: 0; overflow-y: auto; padding: 6px; scroll-padding: 6px; }
+.cmdk-empty { margin: 0; padding: 56px 16px; text-align: center; color: var(--ink-3); }
+.cmdk-preview { flex: none; width: 290px; overflow-y: auto; padding: 18px; border-left: 1px solid var(--rule); font-size: 14px; line-height: 1.55; }
+.cmdk-preview:empty { display: none; }
+.cmdk-hints { flex: none; display: flex; align-items: center; gap: 16px; height: 36px; padding: 0 12px; font-size: 11px; color: var(--ink-3); white-space: nowrap; overflow: hidden; }
+.cmdk-hints span { display: flex; align-items: center; gap: 5px; }
+.cmdk-hints .grow { flex: 1; }
+.cmdk-hints kbd.key { min-width: 1.7em; padding: 0 4px; font-size: 10.5px; line-height: 1.6; }
 .results, .results ol { list-style: none; margin: 0; padding: 0; }
-.results .group + .group { margin-top: 28px; }
-.group-head { display: flex; justify-content: space-between; color: var(--ink); padding-bottom: 8px; }
-.group-head button { color: var(--ink-3); text-transform: uppercase; }
+.results .group + .group { margin-top: 8px; }
+.group-head { display: flex; justify-content: space-between; padding: 8px 8px 6px; font-size: 11px; color: var(--ink-3); }
+.group-head button { text-transform: uppercase; color: var(--ink-3); }
 .group-head button:hover { color: var(--ink); }
-.filters { display: flex; flex-wrap: wrap; gap: 6px 8px; margin: -12px 0 28px; }
-.filters:empty { display: none; }
-.filters button { padding: 5px 9px; border: 1px solid var(--rule); color: var(--ink-2); text-transform: uppercase; }
-.filters button:hover { border-color: var(--ink); }
-.filters button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
-.recent ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
-.recent li button { display: block; width: 100%; text-align: left; padding: 10px 0; border-bottom: 1px solid var(--rule); font-family: var(--display); font-weight: 600; font-size: 18px; }
-.recent li button:hover { color: var(--ink-3); }
-.recent li button::before { content: "↺  "; font-family: var(--mono); font-weight: 400; color: var(--ink-3); }
+.results a { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 8px; font-size: 14.5px; color: var(--ink-2); text-decoration: none; cursor: default; }
+.results a.sel { background: var(--paper-2); color: var(--ink); box-shadow: inset 2px 0 0 var(--ink); }
+.results .g { flex: none; width: 24px; font-size: 11px; text-align: center; color: var(--ink-3); }
+.results .l { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.results .c { flex: none; max-width: 42%; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink-3); }
+.results mark { background: none; color: var(--ink); font-weight: 600; }
+.pv-crumb { margin: 0; font-size: 11px; color: var(--ink-3); }
+.pv-title { margin: 6px 0 10px; font-family: var(--display); font-weight: 600; font-size: 19px; line-height: 1.25; letter-spacing: -0.01em; text-wrap: balance; }
+.pv-text { margin: 0 0 14px; color: var(--ink-2); text-wrap: pretty; }
+.pv-text mark { background: var(--hit); color: var(--hit-ink); }
+.pv-list { list-style: none; margin: 0 0 14px; padding: 10px 0 0; border-top: 1px solid var(--rule); font-size: 13px; color: var(--ink-2); }
+.pv-list li { padding: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pv-meta { margin: 0; font-size: 11px; color: var(--ink-3); }
 mark.hit { background: var(--hit); color: var(--hit-ink); box-shadow: 0 0 0 2px var(--hit); }
-.results a { display: block; padding: 16px 0 16px 18px; margin-left: -18px; border-left: 3px solid transparent; text-decoration: none; border-bottom: 1px solid var(--rule); }
-.results ol li:first-child a { border-top: 1px solid var(--rule); }
-.results a.sel, .results a:hover { border-left-color: var(--accent); background: var(--paper-2); }
-.results .crumb { color: var(--ink-3); font-size: 11.5px; }
-.results .title { font-family: var(--display); font-weight: 600; font-size: 20px; letter-spacing: -0.01em; line-height: 1.3; margin: 3px 0 4px; }
-.results .snip { font-size: 15.5px; line-height: 1.5; color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.results mark { background: var(--hit); color: var(--hit-ink); }
+@media (max-width: 720px) { .cmdk-preview { display: none; } }
+@media (max-width: 600px) {
+  .cmdk { top: calc(env(safe-area-inset-top, 0px) + 12px); width: calc(100vw - 24px); height: min(26rem, 52svh); }
+  .cmdk-hints { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .cmdk { animation: none; } }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 /* Graph */
 .graph-sheet:focus { outline: none; }
@@ -251,6 +281,20 @@ mark.hit { background: var(--hit); color: var(--hit-ink); box-shadow: 0 0 0 2px 
 .graph-note { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); max-width: 26em; margin: 0; font-size: 14px; line-height: 1.45; color: var(--ink-3); pointer-events: none; }
 .graph-key { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 16px; margin: 0; padding: 0; list-style: none; color: var(--ink-2); pointer-events: none; }
 .graph-key i { display: inline-block; margin-right: 6px; vertical-align: middle; background: var(--ink); }
+
+/* Keyboard layer */
+kbd.key { display: inline-block; min-width: 1.9em; padding: 1px 6px; border: 1px solid var(--rule); border-bottom-width: 2px; font-family: var(--mono); font-size: 12px; line-height: 1.5; text-align: center; color: var(--ink); background: var(--paper); }
+.keys { width: 100%; border: 0; font-size: 16px; }
+.keys th { padding-top: 28px; border-bottom: 1px solid var(--ink); }
+.keys td { padding: 9px 0; }
+.keys td:first-child { width: 9em; white-space: nowrap; }
+.keys td:first-child kbd + kbd { margin-left: 4px; }
+.hint { margin: 20px 0 0; color: var(--ink-3); }
+.toast, .backlink { position: fixed; z-index: 50; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); padding: 9px 14px; background: var(--ink); color: var(--paper); }
+.toast { left: 50%; transform: translateX(-50%); pointer-events: none; transition: opacity 0.2s ease-out; }
+.toast.out { opacity: 0; }
+.backlink { right: max(16px, env(safe-area-inset-right, 0px)); max-width: min(360px, calc(100vw - 32px)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: none; }
+.backlink:hover { text-decoration: underline; text-decoration-color: var(--paper); }
 
 @media (max-width: 600px) {
   .graph-note { right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(48px + env(safe-area-inset-bottom, 0px)); font-size: 13px; }
@@ -269,7 +313,6 @@ mark.hit { background: var(--hit); color: var(--hit-ink); box-shadow: 0 0 0 2px 
   .contents li.sub > a, .contents li.sub > .what, .contents li.sub > ol { grid-column: 2; padding-left: 20px; }
   .contents ol { columns: 1; }
   .contents li.here a.name::after { content: none; }
-  .search-field input { font-size: 24px; }
   .pager .t { font-size: 19px; }
   .ask kbd { display: none; }
 }
@@ -305,16 +348,65 @@ mark.hit { background: var(--hit); color: var(--hit-ink); box-shadow: 0 0 0 2px 
   </div>
 </div>
 
-<div class="sheet" id="search-sheet" role="dialog" aria-modal="true" aria-label="Search" hidden>
-  <div class="sheet-head"><span class="mono">The Design System Bible</span><button class="mono" data-close>Close</button></div>
-  <div class="sheet-body">
-    <div class="search-field"><label for="q">Search</label><input id="q" type="search" placeholder="a token, a component, a decision…" autocomplete="off" spellcheck="false" aria-controls="results"></div>
-    <p class="meta" id="meta"></p>
-    <div class="filters mono" id="filters" aria-label="Filter by part"></div>
-    <div class="recent" id="recent"></div>
-    <ol class="results" id="results" role="listbox" aria-label="Results"></ol>
+<div class="sheet cmdk-wrap" id="search-sheet" hidden>
+  <div class="cmdk" role="dialog" aria-modal="true" aria-label="Search the bible">
+    <div class="cmdk-search">
+      <span class="ico" id="cmdk-ico" aria-hidden="true">⌕</span>
+      <button class="cmdk-back mono" id="cmdk-back" aria-label="Back" hidden>‹</button>
+      <span class="cmdk-crumb mono" id="cmdk-crumb" hidden></span>
+      <input id="q" type="search" placeholder="Search sections, parts and commands…" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="results" aria-autocomplete="list" aria-label="Search the bible">
+    </div>
+    <div class="cmdk-body">
+      <div class="cmdk-list">
+        <ol class="results" id="results" role="listbox" aria-label="Results"></ol>
+        <p class="cmdk-empty" id="cmdk-empty" hidden></p>
+      </div>
+      <aside class="cmdk-preview" id="cmdk-preview" aria-live="polite"></aside>
+    </div>
+    <div class="cmdk-hints mono" aria-hidden="true">
+      <span><kbd class="key">↵</kbd><b id="hint-enter">Go</b></span>
+      <span><kbd class="key">↑</kbd><kbd class="key">↓</kbd>Move</span>
+      <span id="hint-tab"><kbd class="key">⇥</kbd>Narrow to part</span>
+      <span><kbd class="key">esc</kbd><b id="hint-esc">Close</b></span>
+      <span class="grow"></span>
+      <span>&gt; commands · in:part</span>
+    </div>
+    <p class="sr-only" id="cmdk-count" aria-live="polite"></p>
   </div>
 </div>
+
+<div class="sheet" id="keys-sheet" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts" hidden>
+  <div class="sheet-head"><span class="mono">The Design System Bible</span><button class="mono" data-close>Close</button></div>
+  <div class="sheet-body">
+    <h2>Keyboard</h2>
+    <table class="keys">
+      <thead><tr><th colspan="2">Find</th></tr></thead>
+      <tbody>
+        <tr><td><kbd class="key">/</kbd><kbd class="key">⌘K</kbd></td><td>Search every section</td></tr>
+        <tr><td><kbd class="key">&gt;</kbd></td><td>Start a search with &gt; to run a command</td></tr>
+        <tr><td><kbd class="key">c</kbd></td><td>Contents</td></tr>
+        <tr><td><kbd class="key">g</kbd></td><td>Graph</td></tr>
+      </tbody>
+      <thead><tr><th colspan="2">Move</th></tr></thead>
+      <tbody>
+        <tr><td><kbd class="key">j</kbd><kbd class="key">k</kbd></td><td>Next and previous section</td></tr>
+        <tr><td><kbd class="key">]</kbd><kbd class="key">[</kbd></td><td>Next and previous part</td></tr>
+        <tr><td><kbd class="key">s</kbd></td><td>Sections in this part</td></tr>
+        <tr><td><kbd class="key">⌥←</kbd></td><td>Back to where you were before a jump</td></tr>
+      </tbody>
+      <thead><tr><th colspan="2">Do</th></tr></thead>
+      <tbody>
+        <tr><td><kbd class="key">y</kbd></td><td>Copy a link to the section you're reading</td></tr>
+        <tr><td><kbd class="key">m</kbd></td><td>Copy that section as Markdown, with its source link</td></tr>
+        <tr><td><kbd class="key">t</kbd></td><td>Switch theme: system, light, dark</td></tr>
+        <tr><td><kbd class="key">?</kbd></td><td>This sheet</td></tr>
+        <tr><td><kbd class="key">esc</kbd></td><td>Close whatever is open</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="toast mono" id="toast" role="status" aria-live="polite" hidden></div>
+<a class="backlink mono" id="backlink" href="#" hidden></a>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
@@ -381,6 +473,7 @@ function build() {
     const art = document.createElement('article');
     art.innerHTML = marked.parse(p.lines.join('\n').replace(/\n-{3,}\s*$/, ''));
     ch.el = art;
+    ch.lines = p.lines;
     ch.heads = [];
     art.querySelectorAll('h2, h3, h4').forEach(h => {
       const text = h.textContent.trim();
@@ -436,7 +529,44 @@ function build() {
 
   CHAPTERS.forEach(linkRefs);
   indexSections();
+  CHAPTERS.forEach(mapMarkdown);
+  CHAPTERS.forEach(addHeadingTools);
   for (const ch of CHAPTERS) ch.nav = ch.heads.filter(h => h.level === 2 ? h.text.length > 1 : h.level === 3 && ch.slug === 'component-a-z');
+}
+
+// Pairs each rendered h2-h4 with its source line, so any section can be copied back out as Markdown.
+function mapMarkdown(ch) {
+  const marks = [];
+  let fence = false;
+  ch.lines.forEach((line, i) => {
+    if (/^\s*(```|~~~)/.test(line)) fence = !fence;
+    const m = !fence && line.match(/^(#{2,4})\s/);
+    if (m) marks.push({ line: i, level: m[1].length });
+  });
+  if (marks.length !== ch.heads.length) { console.warn(`Markdown headings out of step in ${ch.slug}`); return; }
+  marks.forEach((mk, i) => {
+    const end = marks.slice(i + 1).find(n => n.level <= mk.level);
+    ch.heads[i].md = ch.lines.slice(mk.line, end ? end.line : ch.lines.length).join('\n').trim();
+  });
+}
+
+function addHeadingTools(ch) {
+  for (const h of ch.heads) {
+    if (h.level > 3 || h.el.classList.contains('letter') || !ch.el.contains(h.el)) continue;
+    const label = (h.num ? h.num + ' ' : '') + h.name;
+    const tools = document.createElement('span');
+    tools.className = 'hx';
+    tools.innerHTML = `<button class="mono" data-copy-link="${h.id}" aria-label="Copy link to ${esc(label)}">#</button>` +
+      (h.md ? `<button class="mono" data-copy-md="${h.id}" aria-label="Copy ${esc(label)} as Markdown">MD</button>` : '');
+    h.el.appendChild(tools);
+  }
+  ch.el.querySelectorAll('pre').forEach(pre => {
+    const b = document.createElement('button');
+    b.className = 'copy-code mono';
+    b.textContent = 'Copy';
+    b.setAttribute('aria-label', 'Copy code');
+    pre.appendChild(b);
+  });
 }
 
 function sectionTarget(ch, num) {
@@ -539,6 +669,10 @@ function mount(ch) {
   pager.innerHTML = (prev ? `<a href="#${prev.slug}"><small>Previous</small><span class="t">${esc(prev.name)}</span></a>` : '') +
     (next ? `<a class="next" href="#${next.slug}"><small>Next</small><span class="t">${esc(next.name)}</span></a>` : '');
   page.appendChild(pager);
+  const hint = document.createElement('p');
+  hint.className = 'hint mono';
+  hint.innerHTML = 'Press <kbd class="key">?</kbd> for keyboard shortcuts';
+  page.appendChild(hint);
   document.title = ch.slug === 'start' ? 'The Design System Bible' : `${ch.name} · The Design System Bible`;
 }
 
@@ -573,8 +707,11 @@ function titlePage() {
   return tp;
 }
 
-function go(token, flash) {
+function go(token, flash, back) {
   clearHits();
+  if (back !== undefined) {
+    try { history.replaceState({ ...history.state, y: scrollY }, ''); } catch (e) {}
+  }
   const ch = bySlug[token.split('.')[0]] || bySlug.start;
   if (ch !== current) mount(ch);
   if (ch.slug === 'start' && token.includes('.')) {
@@ -588,19 +725,118 @@ function go(token, flash) {
     target.scrollIntoView({ block: 'start' });
     if (flash) { target.classList.remove('flash'); void target.offsetWidth; target.classList.add('flash'); }
   } else scrollTo(0, 0);
-  try { history.replaceState(null, '', '#' + (target ? token : ch.slug)); } catch (e) {}
+  const hash = '#' + (target ? token : ch.slug);
+  try {
+    if (back !== undefined && hash !== location.hash) history.pushState({ back }, '', hash);
+    else history.replaceState(history.state, '', hash);
+  } catch (e) {}
   updateHere();
+  updateBack();
 }
 
 document.addEventListener('click', e => {
   const a = e.target.closest('a[href^="#"]');
   if (!a || e.metaKey || e.ctrlKey) return;
   e.preventDefault();
+  const crossRef = a.closest('article') && !a.closest('.extras');
   closeSheets(false);
   closeToc();
-  go(a.getAttribute('href').slice(1), true);
+  go(a.getAttribute('href').slice(1), true, crossRef ? whereLabel() : null);
 });
-addEventListener('hashchange', () => go(location.hash.slice(1)));
+addEventListener('popstate', e => {
+  closeSheets(false);
+  go(location.hash.slice(1) || 'start');
+  if (e.state && e.state.y != null) scrollTo(0, e.state.y);
+});
+
+/* Back link: after a cross-reference or a search jump, offers the way back. Browser Back does the same. */
+const backlink = $('#backlink');
+const whereLabel = () => !current || current.slug === 'start' ? 'the title page' : curHead ? (curHead.num ? curHead.num + ' ' : '') + curHead.name : current.name;
+function updateBack() {
+  const label = history.state && history.state.back;
+  backlink.hidden = !label;
+  if (label) backlink.textContent = `← Back to ${label}`;
+}
+backlink.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); history.back(); });
+
+/* Keyboard layer */
+const toastEl = $('#toast');
+let toastTimer = 0;
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.hidden = false;
+  toastEl.classList.remove('out');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toastEl.classList.add('out'); toastTimer = setTimeout(() => { toastEl.hidden = true; }, 200); }, 1800);
+}
+async function copy(text, msg) {
+  try { await navigator.clipboard.writeText(text); toast(msg); } catch (e) { toast('Copy failed. Your browser blocked the clipboard.'); }
+}
+const linkTo = id => location.origin + location.pathname + '#' + id;
+
+function readingId() {
+  if (!current || current.slug === 'start') return 'start';
+  const h = lastAbove(current.nav, $('#head').getBoundingClientRect().bottom + 48);
+  return h ? h.id : current.slug;
+}
+function copyLink(id = readingId()) {
+  const h = findHead(id);
+  copy(linkTo(id), `Copied link to ${h ? (h.num ? h.num + ' ' : '') + h.name : whereLabel()}`);
+}
+function findHead(id) {
+  const ch = bySlug[id.split('.')[0]];
+  return ch && ch.heads.find(h => h.id === id);
+}
+function copySection(id = readingId()) {
+  const ch = bySlug[id.split('.')[0]];
+  if (!ch || ch.slug === 'start') return toast('Open a part to copy it as Markdown');
+  const h = findHead(id);
+  const md = h && h.md ? h.md : `# ${ch.title}\n\n${ch.lines.join('\n').trim()}`;
+  copy(md + `\n\nSource: ${linkTo(id)}\n`, `Copied ${h ? (h.num ? h.num + ' ' : '') + h.name : ch.name} as Markdown, ${md.split('\n').length} lines`);
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-copy-link], [data-copy-md], .copy-code');
+  if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  if (b.dataset.copyLink) { go(b.dataset.copyLink); copyLink(b.dataset.copyLink); }
+  else if (b.dataset.copyMd) copySection(b.dataset.copyMd);
+  else copy(b.parentNode.querySelector('code').textContent, 'Copied code');
+}, true);
+
+const THEMES = ['system', 'light', 'dark'];
+function setTheme(t) {
+  if (t === 'system') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = t;
+  try { t === 'system' ? localStorage.removeItem('dsb.theme') : localStorage.setItem('dsb.theme', t); } catch (e) {}
+  if (G) { readColors(); draw(); }
+  toast(`Theme: ${t}`);
+}
+const cycleTheme = () => setTheme(THEMES[(THEMES.indexOf(document.documentElement.dataset.theme || 'system') + 1) % 3]);
+
+function stepSection(d) {
+  if (!current || current.slug === 'start') return;
+  const nav = current.nav, line = $('#head').getBoundingClientRect().bottom + 48;
+  const i = nav.indexOf(lastAbove(nav, line));
+  const t = d > 0 ? nav[i + 1] : i >= 0 && nav[i].el.getBoundingClientRect().top < line - 60 ? nav[i] : nav[i - 1];
+  if (t) go(t.id);
+  else if (d < 0) scrollTo(0, 0);
+}
+function stepPart(d) {
+  const t = CHAPTERS[(current ? current.index : 0) + d];
+  if (t) go(t.slug, false, null);
+}
+const keysSheet = $('#keys-sheet');
+function openKeys() { openSheet(keysSheet); $('[data-close]', keysSheet).focus(); }
+
+const KEYS = { j: () => stepSection(1), k: () => stepSection(-1), ']': () => stepPart(1), '[': () => stepPart(-1), s: () => { if (!here.hidden) toc.hidden ? openToc() : closeToc(); }, y: () => copyLink(), m: () => copySection(), t: cycleTheme, c: () => openContents(), g: () => openGraph(), '?': openKeys };
+document.addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+  const sheetOpen = [...document.querySelectorAll('.sheet')].some(x => !x.hidden);
+  const fn = KEYS[e.key];
+  if (!fn || (sheetOpen && e.key !== '?')) return;
+  e.preventDefault();
+  fn();
+});
 
 /* Running head */
 const here = $('#here'), toc = $('#toc'), progress = $('#progress');
@@ -683,8 +919,10 @@ function openSheet(sheet) {
   document.documentElement.style.overflow = 'hidden';
 }
 function closeSheets(restore = true) {
-  const wasOpen = !contentsSheet.hidden || !searchSheet.hidden || !graphSheet.hidden;
-  contentsSheet.hidden = searchSheet.hidden = graphSheet.hidden = true;
+  const sheets = [...document.querySelectorAll('.sheet')];
+  const wasOpen = sheets.some(x => !x.hidden);
+  if (!searchSheet.hidden) syncUrl('');
+  sheets.forEach(x => { x.hidden = true; });
   if (sim) sim.stop();
   document.documentElement.style.overflow = '';
   if (restore && wasOpen && lastFocus && lastFocus.focus) lastFocus.focus();
@@ -713,9 +951,9 @@ function openContents() {
 $('#open-contents').addEventListener('click', openContents);
 
 /* Search */
-const q = $('#q'), results = $('#results'), meta = $('#meta'), filters = $('#filters'), recentEl = $('#recent');
+const q = $('#q'), results = $('#results');
 const VOCAB = new Set();
-let hits = [], shown = [], sel = 0, only = null, lastTerms = [];
+let sel = 0, only = null, lastTerms = [];
 
 const words = str => str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').split(/[^a-z0-9]+/).filter(Boolean);
 function stem(w) {
@@ -774,20 +1012,21 @@ function search(query) {
   const used = new Set();
   const out = [];
   for (const s of SECTIONS) {
-    let score = 0, ok = true;
+    let score = 0;
+    const matched = [];
     for (const g of groups) {
       let best = 0, bestW = null;
       for (const [w, weight] of g) {
         const v = ((s.tset.has(w) ? 12 : 0) + (s.pset.has(w) ? 3 : 0) + Math.min(10, s.bcount.get(w) || 0)) * weight;
         if (v > best) { best = v; bestW = w; }
       }
-      if (!best) { ok = false; break; }
-      score += best;
-      s.matched = s.matched || [];
-      s.matched.push(bestW);
+      if (best) { score += best; matched.push(bestW); }
     }
-    const matched = s.matched; s.matched = null;
-    if (!ok) continue;
+    // Every word must match, except in longer queries, where a section matching half of them still ranks, lower.
+    if (matched.length < groups.length) {
+      if (groups.length < 2 || matched.length < groups.length / 2) continue;
+      score *= 0.6;
+    }
     matched.forEach(w => used.add(w));
     if (s.tl === phrase) score += 60;
     else if (s.tl.startsWith(phrase)) score += 25;
@@ -804,87 +1043,195 @@ function termRegex(stemList) {
   return new RegExp('\\b(' + roots.map(r => r.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[a-z]*').join('|') + ')', 'gi');
 }
 
-function snippet(text, re) {
+function snippet(text, re, len = 200) {
   re.lastIndex = 0;
   const m = re.exec(text);
   const i = m ? m.index : 0;
-  let a = Math.max(0, i - 60), b = Math.min(text.length, i + 200);
+  let a = Math.max(0, i - 60), b = Math.min(text.length, i + len);
   if (a > 0) a = text.indexOf(' ', a) + 1;
   const s = esc((a > 0 ? '…' : '') + text.slice(a, b).trim() + (b < text.length ? '…' : ''));
   return s.replace(re, '<mark>$1</mark>');
 }
 
-function renderResults() {
-  const query = q.value.trim();
-  const { list, used } = search(query);
-  hits = list;
-  lastTerms = used;
-  if (only && !hits.some(h => h.s.ch === only)) only = null;
-  recentEl.hidden = !!query;
-  if (!query) {
-    meta.textContent = `Searches every section of all ${CHAPTERS.length} parts. Plurals, partial words and small typos still match.`;
-    results.innerHTML = filters.innerHTML = '';
-    shown = [];
-    renderRecent();
-    return;
+// "in:found" or "in:a-z" narrows to the first part whose slug or name starts with it.
+function partFor(token) {
+  const t = token.toLowerCase();
+  return CHAPTERS.find(ch => ch.slug.startsWith(t)) || CHAPTERS.find(ch => words(ch.name).some(w => w.startsWith(t))) || null;
+}
+function parseQuery(raw) {
+  let part = null;
+  const text = raw.replace(/(^|\s)in:(\S+)/gi, (_, sp, t) => { part = partFor(t) || part; return ' '; }).trim();
+  return { text, part };
+}
+
+function syncUrl(raw) {
+  const url = location.pathname + (raw ? `?q=${encodeURIComponent(raw)}` : '') + location.hash;
+  try { history.replaceState(history.state, '', url); } catch (e) {}
+}
+
+/* Command menu: one dialog to search sections, jump to parts and run commands. */
+const previewEl = $('#cmdk-preview'), emptyEl = $('#cmdk-empty'), countEl = $('#cmdk-count');
+let rows = [], page = null, fromKeys = false;
+
+const SUBS = {
+  theme: {
+    label: 'Theme',
+    placeholder: 'Pick a theme…',
+    items: () => THEMES.map(t => ({
+      label: t[0].toUpperCase() + t.slice(1),
+      glyph: { system: '◐', light: '○', dark: '●' }[t],
+      context: (document.documentElement.dataset.theme || 'system') === t ? 'Current' : '',
+      run: () => setTheme(t),
+    })),
+  },
+};
+
+const ACTIONS = () => [
+  { label: 'Change theme', glyph: '◐', keywords: 'dark light mode appearance', sub: 'theme', about: 'Light, dark, or whatever your system is set to. Press T anywhere to cycle through them.' },
+  { label: 'Copy link to this section', glyph: '#', hint: 'y', keywords: 'url share permalink', about: 'A link straight to the section you are reading, so it opens in the same place for whoever you send it to.', run: () => copyLink() },
+  { label: 'Copy this section as Markdown', glyph: 'MD', hint: 'm', keywords: 'source llm paste', about: 'The section’s source Markdown with a link back to it, ready for a doc, an issue or an LLM prompt.', run: () => copySection() },
+  { label: 'Contents', glyph: '≡', hint: 'c', keywords: 'toc parts index', about: 'Every part in order, with what each one covers.', run: () => openContents() },
+  { label: 'Graph', glyph: '⁂', hint: 'g', keywords: 'map links connections', about: 'Every part, section and component as a map of how they reference each other.', run: () => openGraph() },
+  { label: 'Keyboard shortcuts', glyph: '?', hint: '?', keywords: 'keys help', about: 'Every key the site listens for.', run: openKeys },
+  { label: 'Read as Markdown for agents', glyph: '{}', keywords: 'llms.txt ai agent markdown raw', about: 'llms.txt indexes the whole book as plain Markdown, one file per part, for coding agents and LLMs.', run: () => window.open('/llms.txt', '_blank', 'noopener') },
+];
+
+const matches = (r, terms) => { const t = (r.label + ' ' + (r.keywords || '')).toLowerCase(); return terms.every(w => t.includes(w)); };
+const highlightText = (text, re) => re ? esc(text).replace(re, '<mark>$1</mark>') : esc(text);
+
+function partRow(ch, re) {
+  return {
+    label: ch.name, html: highlightText(ch.name, re), glyph: pad(ch.index), href: '#' + ch.slug,
+    context: `${ch.nav.length} sections`,
+    preview: () => `<p class="pv-crumb mono">Part ${pad(ch.index)}${ch.parent ? ' · ' + esc(ch.parent) : ''}</p><p class="pv-title">${esc(ch.title)}</p>` +
+      (ch.what ? `<p class="pv-text">${esc(ch.what)}</p>` : '') +
+      `<ul class="pv-list">${ch.nav.slice(0, 8).map(h => `<li>${esc((h.num ? h.num + ' ' : '') + h.name)}</li>`).join('')}${ch.nav.length > 8 ? `<li class="mono">+ ${ch.nav.length - 8} more</li>` : ''}</ul>` +
+      (ch.reviewed ? `<p class="pv-meta mono">Reviewed ${esc(ch.reviewed.last)}</p>` : ''),
+    run: () => go(ch.slug, false, whereLabel()),
+  };
+}
+
+function sectionRow(s, re, query) {
+  const component = s.ch.slug === 'component-a-z' && s.parent.length <= 1 && s.id !== s.ch.slug;
+  return {
+    label: s.title, html: highlightText(s.title, re), glyph: component ? '▪' : '§', href: '#' + s.id, ch: s.ch,
+    context: s.parent && s.id !== s.ch.slug ? s.parent : '',
+    preview: () => `<p class="pv-crumb mono">Part ${pad(s.ch.index)} · ${esc(s.ch.name)}${s.parent && s.id !== s.ch.slug ? ' · ' + esc(s.parent) : ''}</p>` +
+      `<p class="pv-title">${esc(s.title)}</p><p class="pv-text">${re ? snippet(s.text, re, 420) : esc(s.text.slice(0, 420)) + (s.text.length > 420 ? '…' : '')}</p>` +
+      (s.ch.reviewed ? `<p class="pv-meta mono">Reviewed ${esc(s.ch.reviewed.last)}</p>` : ''),
+    run: () => {
+      if (query) saveRecent(query);
+      go(s.id, true, whereLabel());
+      if (re) markHits(s.id, re);
+    },
+  };
+}
+
+function buildGroups() {
+  const raw = q.value.trim();
+  syncUrl(raw);
+  if (page) {
+    const terms = words(raw);
+    return [{ label: SUBS[page].label, rows: SUBS[page].items().filter(r => matches(r, terms)) }];
   }
+  const commandsOnly = raw.startsWith('>');
+  const { text, part } = parseQuery(commandsOnly ? raw.slice(1) : raw);
+  only = part;
+  const terms = words(text);
+  const actions = ACTIONS().filter(r => matches(r, terms));
+  if (commandsOnly) return [{ label: 'Commands', rows: actions }];
+
+  if (!text && !part) {
+    const recent = readRecent().map(r => ({ label: r, glyph: '↺', keep: true, about: 'Run this search again.', run: () => { q.value = r; refresh(); } }));
+    return [
+      { label: 'Recent', rows: recent, clear: true },
+      { label: 'Parts', rows: CHAPTERS.filter(ch => ch.slug !== 'start').map(ch => partRow(ch)) },
+      { label: 'Actions', rows: actions },
+    ];
+  }
+
+  const { list, used } = search(text || '');
+  lastTerms = used;
   const re = termRegex(used);
-  const counts = new Map();
-  for (const h of hits) counts.set(h.s.ch, (counts.get(h.s.ch) || 0) + 1);
-  const parts = [...counts.keys()].sort((a, b) => a.index - b.index);
-  filters.innerHTML = parts.length > 1 ? [`<button data-part="" aria-pressed="${!only}">All ${hits.length}</button>`]
-    .concat(parts.map(ch => `<button data-part="${ch.slug}" aria-pressed="${only === ch}">${esc(ch.name)} ${counts.get(ch)}</button>`)).join('') : '';
-  shown = only ? hits.filter(h => h.s.ch === only) : hits;
-  sel = 0;
-  meta.textContent = hits.length ? `${hits.length === 60 ? 'Top 60' : hits.length} ${hits.length === 1 ? 'passage' : 'passages'} for “${query}”${only ? ` in ${only.name}` : ''}` : `Nothing matches “${query}”. Try fewer or broader words.`;
-
-  const order = [];
-  const byPart = new Map();
-  shown.forEach((h, i) => {
-    if (!byPart.has(h.s.ch)) { byPart.set(h.s.ch, []); order.push(h.s.ch); }
-    byPart.get(h.s.ch).push([h, i]);
-  });
-  results.innerHTML = order.map(ch => `<li class="group" role="presentation"><div class="group-head mono">Part ${pad(ch.index)} · ${esc(ch.name)}</div><ol role="presentation">${byPart.get(ch).map(([{ s }, i]) => `<li role="presentation"><a href="#${s.id}" role="option" data-i="${i}" class="${i === 0 ? 'sel' : ''}" aria-selected="${i === 0}">
-      ${s.parent && s.id !== s.ch.slug ? `<div class="crumb mono">${esc(s.parent)}</div>` : ''}<div class="title">${esc(s.title)}</div>
-      <div class="snip">${re ? snippet(s.text, re) : esc(s.text.slice(0, 200))}</div></a></li>`).join('')}</ol></li>`).join('');
-  results.querySelectorAll('a').forEach(a => { const on = a.dataset.i === '0'; a.classList.toggle('sel', on); a.setAttribute('aria-selected', on); });
+  const groups = [];
+  const named = r => terms.every(t => words(r.label).some(w => w.startsWith(t)));
+  if (!part && actions.some(named)) groups.push({ label: 'Actions', rows: actions.filter(named) });
+  if (!part && terms.length) {
+    const parts = CHAPTERS.filter(ch => ch.slug !== 'start' && terms.every(t => words(ch.name).some(w => w.startsWith(t))));
+    groups.push({ label: 'Parts', rows: parts.map(ch => partRow(ch, re)) });
+  }
+  if (!text) {
+    const sections = SECTIONS.filter(s => s.ch === part && s.id !== part.slug && part.nav.some(h => h.id === s.id));
+    groups.push({ label: `Part ${pad(part.index)} · ${part.name}`, rows: sections.map(s => sectionRow(s, null)) });
+  } else {
+    const byPart = new Map();
+    for (const { s } of list) {
+      if (part && s.ch !== part) continue;
+      if (!byPart.has(s.ch)) byPart.set(s.ch, []);
+      byPart.get(s.ch).push(sectionRow(s, re, raw));
+    }
+    for (const [ch, r] of byPart) groups.push({ label: `Part ${pad(ch.index)} · ${ch.name}`, rows: r });
+  }
+  if (!part) groups.push({ label: actions.some(named) ? 'More actions' : 'Actions', rows: actions.filter(r => !named(r)) });
+  return groups;
 }
 
-function move(d) {
-  if (!shown.length) return;
-  const at = i => results.querySelector(`[data-i="${i}"]`);
-  at(sel).classList.remove('sel'); at(sel).setAttribute('aria-selected', 'false');
-  sel = (sel + d + shown.length) % shown.length;
-  at(sel).classList.add('sel'); at(sel).setAttribute('aria-selected', 'true');
-  at(sel).scrollIntoView({ block: 'nearest' });
+function rowHtml(r, i) {
+  return `<li role="presentation"><a href="${r.href || '#'}" role="option" id="opt-${i}" data-i="${i}">` +
+    `<span class="g mono" aria-hidden="true">${esc(r.glyph || '')}</span><span class="l">${r.html || esc(r.label)}</span>` +
+    (r.context ? `<span class="c mono">${esc(r.context)}</span>` : '') +
+    (r.hint ? `<kbd class="key" aria-hidden="true">${esc(r.hint)}</kbd>` : '') +
+    (r.sub ? '<span class="c mono" aria-hidden="true">›</span>' : '') + '</a></li>';
 }
+
+function refresh() {
+  const groups = buildGroups().filter(g => g.rows.length);
+  rows = groups.flatMap(g => g.rows);
+  let i = 0;
+  results.innerHTML = groups.map(g => `<li class="group" role="presentation"><div class="group-head mono">${esc(g.label)}${g.clear ? '<button data-clear>Clear</button>' : ''}</div>` +
+    `<ol role="group" aria-label="${esc(g.label)}">${g.rows.map(r => rowHtml(r, i++)).join('')}</ol></li>`).join('');
+  const raw = q.value.trim();
+  emptyEl.hidden = rows.length > 0;
+  emptyEl.textContent = raw.startsWith('>') ? 'No command matches.' : `Nothing matches “${raw}”. Try fewer or broader words.`;
+  countEl.textContent = raw ? `${rows.length} ${rows.length === 1 ? 'result' : 'results'}` : '';
+  $('#cmdk-ico').hidden = !!page;
+  $('#cmdk-back').hidden = $('#cmdk-crumb').hidden = !page;
+  if (page) $('#cmdk-crumb').textContent = SUBS[page].label;
+  q.placeholder = page ? SUBS[page].placeholder : 'Search sections, parts and commands…';
+  $('#hint-esc').textContent = page || raw ? 'Back' : 'Close';
+  fromKeys = true;
+  highlight(0);
+}
+
+function highlight(i) {
+  if (!rows.length) { previewEl.innerHTML = ''; q.removeAttribute('aria-activedescendant'); return; }
+  sel = (i + rows.length) % rows.length;
+  results.querySelectorAll('a[data-i]').forEach(a => { const on = +a.dataset.i === sel; a.classList.toggle('sel', on); a.setAttribute('aria-selected', on); });
+  const a = $(`#opt-${sel}`);
+  if (fromKeys) a.scrollIntoView({ block: 'nearest' });
+  q.setAttribute('aria-activedescendant', a.id);
+  const r = rows[sel];
+  previewEl.innerHTML = r.preview ? r.preview() : r.about ? `<p class="pv-title">${esc(r.label)}</p><p class="pv-text">${esc(r.about)}</p>` : '';
+  $('#hint-enter').textContent = r.sub ? 'Open' : r.href ? 'Go' : 'Run';
+  $('#hint-tab').style.visibility = r.ch && !only ? '' : 'hidden';
+}
+
+function runRow(r) {
+  if (!r) return;
+  if (r.sub) { page = r.sub; q.value = ''; refresh(); q.focus(); return; }
+  if (r.keep) { r.run(); q.focus(); return; }
+  closeSheets(false);
+  r.run();
+}
+
+function back() { page = null; q.value = ''; refresh(); q.focus(); }
 
 /* Recent searches live only in this browser. */
 const RECENT_KEY = 'dsb.recent';
 function readRecent() { try { return JSON.parse(localStorage.getItem(RECENT_KEY)) || []; } catch (e) { return []; } }
 function saveRecent(query) {
-  const list = [query, ...readRecent().filter(r => r.toLowerCase() !== query.toLowerCase())].slice(0, 6);
+  const list = [query, ...readRecent().filter(r => r.toLowerCase() !== query.toLowerCase())].slice(0, 5);
   try { localStorage.setItem(RECENT_KEY, JSON.stringify(list)); } catch (e) {}
-}
-function renderRecent() {
-  const list = readRecent();
-  recentEl.innerHTML = list.length ? `<div class="group-head mono">Recent<button data-clear>Clear</button></div><ul>${list.map(r => `<li><button data-recent="${esc(r)}">${esc(r)}</button></li>`).join('')}</ul>` : '';
-}
-recentEl.addEventListener('click', e => {
-  const b = e.target.closest('button');
-  if (!b) return;
-  if ('clear' in b.dataset) { try { localStorage.removeItem(RECENT_KEY); } catch (e) {} renderRecent(); q.focus(); return; }
-  q.value = b.dataset.recent; renderResults(); q.focus();
-});
-
-function openResult(i) {
-  const h = shown[i];
-  if (!h) return;
-  saveRecent(q.value.trim());
-  const re = termRegex(lastTerms);
-  closeSheets(false);
-  go(h.s.id, true);
-  if (re) markHits(h.s.id, re);
 }
 
 // Marks the search words inside the section that was opened, then brings the first one into view.
@@ -899,7 +1246,7 @@ function markHits(id, re) {
   while (el && !isHead(el)) { blocks.push(el); el = el.nextElementSibling; }
   const marks = [];
   for (const b of blocks) {
-    const walker = document.createTreeWalker(b, NodeFilter.SHOW_TEXT, { acceptNode: n => n.parentElement.closest('.num, pre') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+    const walker = document.createTreeWalker(b, NodeFilter.SHOW_TEXT, { acceptNode: n => n.parentElement.closest('.num, .hx, pre') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
     const nodes = [];
     while (walker.nextNode()) nodes.push(walker.currentNode);
     for (const node of nodes) {
@@ -924,34 +1271,51 @@ function clearHits() {
 
 function openSearch(prefill) {
   openSheet(searchSheet);
+  page = null;
   if (prefill !== undefined) q.value = prefill;
-  only = null;
-  renderResults();
+  refresh();
   q.focus(); q.select();
 }
 $('#open-search').addEventListener('click', () => openSearch());
-q.addEventListener('input', () => { only = null; renderResults(); });
-filters.addEventListener('click', e => {
-  const b = e.target.closest('[data-part]');
-  if (!b) return;
-  only = b.dataset.part ? bySlug[b.dataset.part] : null;
-  renderResults();
+$('#cmdk-back').addEventListener('click', back);
+searchSheet.addEventListener('pointerdown', e => { if (!e.target.closest('.cmdk')) closeSheets(); });
+q.addEventListener('input', refresh);
+results.addEventListener('mousemove', e => {
+  const a = e.target.closest('a[data-i]');
+  if (a && +a.dataset.i !== sel) { fromKeys = false; highlight(+a.dataset.i); }
 });
 results.addEventListener('click', e => {
+  if (e.target.closest('[data-clear]')) {
+    e.preventDefault(); e.stopPropagation();
+    try { localStorage.removeItem(RECENT_KEY); } catch (err) {}
+    refresh(); q.focus();
+    return;
+  }
   const a = e.target.closest('a[data-i]');
   if (!a || e.metaKey || e.ctrlKey) return;
   e.preventDefault(); e.stopPropagation();
-  openResult(+a.dataset.i);
+  runRow(rows[+a.dataset.i]);
 });
 q.addEventListener('keydown', e => {
-  if (e.key === 'ArrowDown') { e.preventDefault(); move(1); }
-  else if (e.key === 'ArrowUp') { e.preventDefault(); move(-1); }
-  else if (e.key === 'Enter' && shown[sel]) { e.preventDefault(); openResult(sel); }
+  fromKeys = true;
+  if (e.key === 'ArrowDown') { e.preventDefault(); highlight(sel + 1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); highlight(sel - 1); }
+  else if (e.key === 'Enter') { e.preventDefault(); runRow(rows[sel]); }
+  else if (e.key === 'Tab' && !e.shiftKey && rows[sel] && rows[sel].ch && !only) {
+    e.preventDefault();
+    q.value = `${parseQuery(q.value).text} in:${rows[sel].ch.slug}`;
+    refresh();
+  } else if (e.key === 'Escape') {
+    e.preventDefault(); e.stopPropagation();
+    if (page) back();
+    else if (q.value) { q.value = ''; refresh(); }
+    else closeSheets();
+  } else if (e.key === 'Backspace' && !q.value && page) { e.preventDefault(); back(); }
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { if (!toc.hidden) closeToc(true); else closeSheets(); return; }
   const typing = /INPUT|TEXTAREA/.test(document.activeElement.tagName);
-  if ((e.key === '/' && !typing) || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) { e.preventDefault(); openSearch(); }
+  if ((e.key === '/' && !e.shiftKey && !typing) || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) { e.preventDefault(); openSearch(); }
 });
 
 /* Graph */
@@ -1223,6 +1587,8 @@ addEventListener('resize', () => { if (!graphSheet.hidden) sizeCanvas(); });
 document.querySelectorAll('[data-mark]').forEach(drawMark);
 build();
 go(location.hash.slice(1) || 'start');
+const sharedQuery = new URLSearchParams(location.search).get('q');
+if (sharedQuery) openSearch(sharedQuery);
 </script>
 </body>
 </html>
