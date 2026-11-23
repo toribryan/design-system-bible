@@ -3,5 +3,37 @@
   "framework": null,
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "redirects": [{ "source": "/(.*)", "has": [{ "type": "host", "value": "www.designsystembible.com" }], "destination": "https://designsystembible.com/$1", "permanent": true }]
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.designsystembible.com"
+        }
+      ],
+      "destination": "https://designsystembible.com/$1",
+      "permanent": true
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*).md",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/markdown; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "source": "/llms.txt",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        }
+      ]
+    }
+  ]
 }

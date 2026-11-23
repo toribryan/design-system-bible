@@ -14,6 +14,7 @@
 <meta name="theme-color" content="#F4F3EF" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate" type="text/markdown" href="/design-system-bible.md" title="The Design System Bible as Markdown">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@500..700&family=Instrument+Sans:ital,wght@0,400..600;1,400..500&family=DM+Mono:wght@400;500&family=Silkscreen&display=swap">
@@ -413,23 +414,7 @@ kbd.key { display: inline-block; min-width: 1.9em; padding: 1px 6px; border: 1px
 <script>
 const SOURCE = /*__DATA__*/;
 
-const CHAPTERS = [
-  { slug: 'start', name: 'Start here' },
-  { slug: 'new-in-2026', name: 'New in 2026' },
-  { slug: 'worked-example', name: 'Worked Example' },
-  { slug: 'foundations', name: 'Foundations' },
-  { slug: 'components', name: 'Components' },
-  { slug: 'component-a-z', name: 'Component A–Z', parent: 'Components' },
-  { slug: 'composition', name: 'Component Composition', parent: 'Components' },
-  { slug: 'design-to-code', name: 'Design to Code' },
-  { slug: 'architectures', name: 'System Architectures', parent: 'Design to Code' },
-  { slug: 'governance', name: 'Governance' },
-  { slug: 'decisions', name: 'Decision Frameworks', parent: 'Governance' },
-  { slug: 'playbooks', name: 'Workflows and Playbooks', parent: 'Governance' },
-  { slug: 'strategy', name: 'Strategy and Leadership' },
-  { slug: 'agentic', name: 'Agentic Design Systems' },
-  { slug: 'reference', name: 'Reference' },
-];
+const CHAPTERS = /*__CHAPTERS__*/;
 const BARE_LINKABLE = new Set(['New in 2026', 'Worked Example', 'Component A–Z', 'Component Composition', 'Design to Code', 'System Architectures', 'Decision Frameworks', 'Workflows and Playbooks', 'Strategy and Leadership', 'Agentic Design Systems']);
 const TRIES = ['token tiers', 'breaking change', 'combobox props', 'right-to-left', 'who decides', 'chart colors', 'first 90 days'];
 
@@ -1093,6 +1078,7 @@ const ACTIONS = () => [
   { label: 'Contents', glyph: '≡', hint: 'c', keywords: 'toc parts index', about: 'Every part in order, with what each one covers.', run: () => openContents() },
   { label: 'Graph', glyph: '⁂', hint: 'g', keywords: 'map links connections', about: 'Every part, section and component as a map of how they reference each other.', run: () => openGraph() },
   { label: 'Keyboard shortcuts', glyph: '?', hint: '?', keywords: 'keys help', about: 'Every key the site listens for.', run: openKeys },
+  { label: 'View this part as Markdown', glyph: 'MD', keywords: 'source raw', about: 'The part you are reading as its raw Markdown file.', run: () => window.open(`/md/${current && current.slug !== 'start' ? current.slug : 'start'}.md`, '_blank', 'noopener') },
   { label: 'Read as Markdown for agents', glyph: '{}', keywords: 'llms.txt ai agent markdown raw', about: 'llms.txt indexes the whole book as plain Markdown, one file per part, for coding agents and LLMs.', run: () => window.open('/llms.txt', '_blank', 'noopener') },
 ];
 
