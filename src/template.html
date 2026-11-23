@@ -17,6 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@500..700&family=Instrument+Sans:ital,wght@0,400..600;1,400..500&family=DM+Mono:wght@400;500&family=Silkscreen&display=swap">
+<script>try { const t = localStorage.getItem('dsb.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <style>
 /* Off-black ink on off-white paper, no color. Highlights invert. Nothing is rounded. */
 :root {
@@ -252,6 +253,20 @@ mark.hit { background: var(--hit); color: var(--hit-ink); box-shadow: 0 0 0 2px 
 .graph-key { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 16px; margin: 0; padding: 0; list-style: none; color: var(--ink-2); pointer-events: none; }
 .graph-key i { display: inline-block; margin-right: 6px; vertical-align: middle; background: var(--ink); }
 
+/* Keyboard layer */
+kbd.key { display: inline-block; min-width: 1.9em; padding: 1px 6px; border: 1px solid var(--rule); border-bottom-width: 2px; font-family: var(--mono); font-size: 12px; line-height: 1.5; text-align: center; color: var(--ink); background: var(--paper); }
+.keys { width: 100%; border: 0; font-size: 16px; }
+.keys th { padding-top: 28px; border-bottom: 1px solid var(--ink); }
+.keys td { padding: 9px 0; }
+.keys td:first-child { width: 9em; white-space: nowrap; }
+.keys td:first-child kbd + kbd { margin-left: 4px; }
+.hint { margin: 20px 0 0; color: var(--ink-3); }
+.toast, .backlink { position: fixed; z-index: 50; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); padding: 9px 14px; background: var(--ink); color: var(--paper); }
+.toast { left: 50%; transform: translateX(-50%); pointer-events: none; transition: opacity 0.2s ease-out; }
+.toast.out { opacity: 0; }
+.backlink { right: max(16px, env(safe-area-inset-right, 0px)); max-width: min(360px, calc(100vw - 32px)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: none; }
+.backlink:hover { text-decoration: underline; text-decoration-color: var(--paper); }
+
 @media (max-width: 600px) {
   .graph-note { right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(48px + env(safe-area-inset-bottom, 0px)); font-size: 13px; }
   .graph-key { left: max(16px, env(safe-area-inset-left, 0px)); right: auto; }
@@ -315,6 +330,38 @@ mark.hit { background: var(--hit); color: var(--hit-ink); box-shadow: 0 0 0 2px 
     <ol class="results" id="results" role="listbox" aria-label="Results"></ol>
   </div>
 </div>
+
+<div class="sheet" id="keys-sheet" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts" hidden>
+  <div class="sheet-head"><span class="mono">The Design System Bible</span><button class="mono" data-close>Close</button></div>
+  <div class="sheet-body">
+    <h2>Keyboard</h2>
+    <table class="keys">
+      <thead><tr><th colspan="2">Find</th></tr></thead>
+      <tbody>
+        <tr><td><kbd class="key">/</kbd><kbd class="key">⌘K</kbd></td><td>Search every section</td></tr>
+        <tr><td><kbd class="key">&gt;</kbd></td><td>Start a search with &gt; to run a command</td></tr>
+        <tr><td><kbd class="key">c</kbd></td><td>Contents</td></tr>
+        <tr><td><kbd class="key">g</kbd></td><td>Graph</td></tr>
+      </tbody>
+      <thead><tr><th colspan="2">Move</th></tr></thead>
+      <tbody>
+        <tr><td><kbd class="key">j</kbd><kbd class="key">k</kbd></td><td>Next and previous section</td></tr>
+        <tr><td><kbd class="key">]</kbd><kbd class="key">[</kbd></td><td>Next and previous part</td></tr>
+        <tr><td><kbd class="key">s</kbd></td><td>Sections in this part</td></tr>
+        <tr><td><kbd class="key">⌥←</kbd></td><td>Back to where you were before a jump</td></tr>
+      </tbody>
+      <thead><tr><th colspan="2">Do</th></tr></thead>
+      <tbody>
+        <tr><td><kbd class="key">y</kbd></td><td>Copy a link to the section you're reading</td></tr>
+        <tr><td><kbd class="key">t</kbd></td><td>Switch theme: system, light, dark</td></tr>
+        <tr><td><kbd class="key">?</kbd></td><td>This sheet</td></tr>
+        <tr><td><kbd class="key">esc</kbd></td><td>Close whatever is open</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="toast mono" id="toast" role="status" aria-live="polite" hidden></div>
+<a class="backlink mono" id="backlink" href="#" hidden></a>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
@@ -539,6 +586,10 @@ function mount(ch) {
   pager.innerHTML = (prev ? `<a href="#${prev.slug}"><small>Previous</small><span class="t">${esc(prev.name)}</span></a>` : '') +
     (next ? `<a class="next" href="#${next.slug}"><small>Next</small><span class="t">${esc(next.name)}</span></a>` : '');
   page.appendChild(pager);
+  const hint = document.createElement('p');
+  hint.className = 'hint mono';
+  hint.innerHTML = 'Press <kbd class="key">?</kbd> for keyboard shortcuts';
+  page.appendChild(hint);
   document.title = ch.slug === 'start' ? 'The Design System Bible' : `${ch.name} · The Design System Bible`;
 }
 
@@ -573,8 +624,11 @@ function titlePage() {
   return tp;
 }
 
-function go(token, flash) {
+function go(token, flash, back) {
   clearHits();
+  if (back !== undefined) {
+    try { history.replaceState({ ...history.state, y: scrollY }, ''); } catch (e) {}
+  }
   const ch = bySlug[token.split('.')[0]] || bySlug.start;
   if (ch !== current) mount(ch);
   if (ch.slug === 'start' && token.includes('.')) {
@@ -588,19 +642,96 @@ function go(token, flash) {
     target.scrollIntoView({ block: 'start' });
     if (flash) { target.classList.remove('flash'); void target.offsetWidth; target.classList.add('flash'); }
   } else scrollTo(0, 0);
-  try { history.replaceState(null, '', '#' + (target ? token : ch.slug)); } catch (e) {}
+  const hash = '#' + (target ? token : ch.slug);
+  try {
+    if (back !== undefined && hash !== location.hash) history.pushState({ back }, '', hash);
+    else history.replaceState(history.state, '', hash);
+  } catch (e) {}
   updateHere();
+  updateBack();
 }
 
 document.addEventListener('click', e => {
   const a = e.target.closest('a[href^="#"]');
   if (!a || e.metaKey || e.ctrlKey) return;
   e.preventDefault();
+  const crossRef = a.closest('article') && !a.closest('.extras');
   closeSheets(false);
   closeToc();
-  go(a.getAttribute('href').slice(1), true);
+  go(a.getAttribute('href').slice(1), true, crossRef ? whereLabel() : null);
 });
-addEventListener('hashchange', () => go(location.hash.slice(1)));
+addEventListener('popstate', e => {
+  closeSheets(false);
+  go(location.hash.slice(1) || 'start');
+  if (e.state && e.state.y != null) scrollTo(0, e.state.y);
+});
+
+/* Back link: after a cross-reference or a search jump, offers the way back. Browser Back does the same. */
+const backlink = $('#backlink');
+const whereLabel = () => !current || current.slug === 'start' ? 'the title page' : curHead ? (curHead.num ? curHead.num + ' ' : '') + curHead.name : current.name;
+function updateBack() {
+  const label = history.state && history.state.back;
+  backlink.hidden = !label;
+  if (label) backlink.textContent = `← Back to ${label}`;
+}
+backlink.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); history.back(); });
+
+/* Keyboard layer */
+const toastEl = $('#toast');
+let toastTimer = 0;
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.hidden = false;
+  toastEl.classList.remove('out');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toastEl.classList.add('out'); toastTimer = setTimeout(() => { toastEl.hidden = true; }, 200); }, 1800);
+}
+async function copy(text, msg) {
+  try { await navigator.clipboard.writeText(text); toast(msg); } catch (e) { toast('Copy failed. Your browser blocked the clipboard.'); }
+}
+const linkTo = id => location.origin + location.pathname + '#' + id;
+
+function readingId() {
+  if (!current || current.slug === 'start') return 'start';
+  const h = lastAbove(current.nav, $('#head').getBoundingClientRect().bottom + 48);
+  return h ? h.id : current.slug;
+}
+function copyLink() { copy(linkTo(readingId()), `Copied link to ${whereLabel()}`); }
+
+const THEMES = ['system', 'light', 'dark'];
+function setTheme(t) {
+  if (t === 'system') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = t;
+  try { t === 'system' ? localStorage.removeItem('dsb.theme') : localStorage.setItem('dsb.theme', t); } catch (e) {}
+  if (G) { readColors(); draw(); }
+  toast(`Theme: ${t}`);
+}
+const cycleTheme = () => setTheme(THEMES[(THEMES.indexOf(document.documentElement.dataset.theme || 'system') + 1) % 3]);
+
+function stepSection(d) {
+  if (!current || current.slug === 'start') return;
+  const nav = current.nav, line = $('#head').getBoundingClientRect().bottom + 48;
+  const i = nav.indexOf(lastAbove(nav, line));
+  const t = d > 0 ? nav[i + 1] : i >= 0 && nav[i].el.getBoundingClientRect().top < line - 60 ? nav[i] : nav[i - 1];
+  if (t) go(t.id);
+  else if (d < 0) scrollTo(0, 0);
+}
+function stepPart(d) {
+  const t = CHAPTERS[(current ? current.index : 0) + d];
+  if (t) go(t.slug, false, null);
+}
+const keysSheet = $('#keys-sheet');
+function openKeys() { openSheet(keysSheet); $('[data-close]', keysSheet).focus(); }
+
+const KEYS = { j: () => stepSection(1), k: () => stepSection(-1), ']': () => stepPart(1), '[': () => stepPart(-1), s: () => { if (!here.hidden) toc.hidden ? openToc() : closeToc(); }, y: copyLink, t: cycleTheme, c: () => openContents(), g: () => openGraph(), '?': openKeys };
+document.addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+  const sheetOpen = [...document.querySelectorAll('.sheet')].some(x => !x.hidden);
+  const fn = KEYS[e.key];
+  if (!fn || (sheetOpen && e.key !== '?')) return;
+  e.preventDefault();
+  fn();
+});
 
 /* Running head */
 const here = $('#here'), toc = $('#toc'), progress = $('#progress');
@@ -683,8 +814,9 @@ function openSheet(sheet) {
   document.documentElement.style.overflow = 'hidden';
 }
 function closeSheets(restore = true) {
-  const wasOpen = !contentsSheet.hidden || !searchSheet.hidden || !graphSheet.hidden;
-  contentsSheet.hidden = searchSheet.hidden = graphSheet.hidden = true;
+  const sheets = [...document.querySelectorAll('.sheet')];
+  const wasOpen = sheets.some(x => !x.hidden);
+  sheets.forEach(x => { x.hidden = true; });
   if (sim) sim.stop();
   document.documentElement.style.overflow = '';
   if (restore && wasOpen && lastFocus && lastFocus.focus) lastFocus.focus();
@@ -883,7 +1015,7 @@ function openResult(i) {
   saveRecent(q.value.trim());
   const re = termRegex(lastTerms);
   closeSheets(false);
-  go(h.s.id, true);
+  go(h.s.id, true, whereLabel());
   if (re) markHits(h.s.id, re);
 }
 
@@ -951,7 +1083,7 @@ q.addEventListener('keydown', e => {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { if (!toc.hidden) closeToc(true); else closeSheets(); return; }
   const typing = /INPUT|TEXTAREA/.test(document.activeElement.tagName);
-  if ((e.key === '/' && !typing) || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) { e.preventDefault(); openSearch(); }
+  if ((e.key === '/' && !e.shiftKey && !typing) || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) { e.preventDefault(); openSearch(); }
 });
 
 /* Graph */
